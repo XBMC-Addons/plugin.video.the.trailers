@@ -126,40 +126,27 @@ def __add_items(entries):
     for e in entries:
         if force_viewmode and not has_icons and e.get('thumb', False):
             has_icons = True
-        if e.get('pagenination', False):
-            if e['pagenination'] == 'PREV':
-                if update_on_pageswitch:
-                    is_update = True
-                title = '<< %s %s <<' % (plugin.get_string(30000), e['title'])
-            elif e['pagenination'] == 'NEXT':
-                title = '>> %s %s >>' % (plugin.get_string(30000), e['title'])
-            items.append({'label': title,
-                          'iconImage': 'DefaultFolder.png',
-                          'is_folder': True,
-                          'is_playable': False,
-                          'url': plugin.url_for('show_path',
-                                                path=e['path'])})
-        else:
-            items.append({'label': e['title'],
-                          'iconImage': e.get('thumb', 'DefaultVideo.png'),
-                          'info': {'title': e.get('title'),
-                                   'duration': e.get('duration', '0:00'),
-                                   'size': int(e.get('size', 0)),
-                                   'mpaa': e.get('mpaa', ''),
-                                   'plot': e.get('plot', ''),
-                                   'cast': e.get('cast', []),
-                                   'genre': e.get('genre', ''),
-                                   'studio': e.get('studio', ''),
-                                   'date': e.get('post_date', ''),
-                                   'premiered': e.get('release_date', ''),
-                                   'year': int(e.get('year', 0)),
-                                   'rating': float(e.get('rating', 0.0)),
-                                   'director': e.get('director', '')},
-                          'is_folder': False,
-                          'is_playable': True,
-                          'url': e['url']})
+        items.append({'label': e['title'],
+                      'iconImage': e.get('thumb', 'DefaultVideo.png'),
+                      'info': {'title': e.get('title'),
+                               'duration': e.get('duration', '0:00'),
+                               'size': int(e.get('size', 0)),
+                               'mpaa': e.get('mpaa', ''),
+                               'plot': e.get('plot', ''),
+                               'cast': e.get('cast', []),
+                               'genre': e.get('genre', ''),
+                               'studio': e.get('studio', ''),
+                               'date': e.get('post_date', ''),
+                               'premiered': e.get('release_date', ''),
+                               'year': int(e.get('year', 0)),
+                               'rating': float(e.get('rating', 0.0)),
+                               'director': e.get('director', '')},
+                      'is_folder': False,
+                      'is_playable': True,
+                      'url': e['url']})
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
-                    xbmcplugin.SORT_METHOD_VIDEO_RATING,
+                    xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+                    xbmcplugin.SORT_METHOD_DATE,
                     xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
     __log('__add_items end')
     return plugin.add_items(items, is_update=is_update,
