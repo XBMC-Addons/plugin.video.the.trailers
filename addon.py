@@ -142,21 +142,25 @@ def __add_items(entries):
         else:
             items.append({'label': e['title'],
                           'iconImage': e.get('thumb', 'DefaultVideo.png'),
-                          'info': {'duration': e.get('length', '0:00'),
-                                   'plot': e.get('description', ''),
-                                   'cast': e.get('cast', ''),
+                          'info': {'title': e.get('title'),
+                                   'duration': e.get('duration', '0:00'),
+                                   'size': int(e.get('size', 0)),
+                                   'mpaa': e.get('mpaa', ''),
+                                   'plot': e.get('plot', ''),
+                                   'cast': e.get('cast', []),
                                    'genre': e.get('genre', ''),
                                    'studio': e.get('studio', ''),
-                                   'date': e.get('date', ''),
+                                   'date': e.get('post_date', ''),
+                                   'premiered': e.get('release_date', ''),
                                    'year': int(e.get('year', 0)),
                                    'rating': float(e.get('rating', 0.0)),
                                    'director': e.get('director', '')},
                           'is_folder': False,
                           'is_playable': True,
                           'url': e['url']})
-    sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED, 
+    sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
                     xbmcplugin.SORT_METHOD_VIDEO_RATING,
-                    xbmcplugin.SORT_METHOD_VIDEO_RUNTIME,]
+                    xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
     __log('__add_items end')
     return plugin.add_items(items, is_update=is_update,
                             sort_method_ids=sort_methods,

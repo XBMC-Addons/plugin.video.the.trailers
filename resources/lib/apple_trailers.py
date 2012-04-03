@@ -45,19 +45,22 @@ def get_trailers(category_id):
         trailer = {'movie_id': m.get('id'),
                    'title': m.title.string,
                    'duration': m.runtime.string,
-                   'rate': m.rating.string,
+                   'mpaa': m.rating.string,
                    'studio': m.studio.string,
                    'post_date': __format_date(m.postdate.string),
                    'release_date': __format_date(m.releasedate.string),
+                   'year': __format_year(m.releasedate.string),
                    'copyright': m.copyright.string,
                    'director': m.director.string,
                    'plot': m.description.string,
-                   'thumb': m.poster.xlarge.string,}
-        if m.get('genre'):
-            trailer['genre'] = [g.string for g in m.genre.findAll('name')]
-        if m.get('cast'):
+                   'thumb': m.poster.xlarge.string, }
+        if m.genre:
+            genres = [g.string for g in m.genre.findAll('name')]
+            trailer['genre'] = __format_group(genres)
+        if m.cast:
             trailer['cast'] = [c.string for c in m.cast.findAll('name')]
         trailer['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
+        trailer['size'] = m.preview.large['filesize']
         trailers.append(trailer)
     if DEBUG:
         for t in trailers:
@@ -69,6 +72,14 @@ def get_trailers(category_id):
 def __format_date(date_str):
     y, m, d = date_str.split('-')
     return '.'.join((d, m, y, ))
+
+
+def __format_year(date_str):
+    return date_str.split('-', 1)[0]
+
+
+def __format_group(group):
+    return ', '.join(group)
 
 
 def __get_tree(url, referer=None):
