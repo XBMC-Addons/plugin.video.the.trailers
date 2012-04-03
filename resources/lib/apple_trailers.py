@@ -40,20 +40,35 @@ def get_trailers(category_id):
     __log('get_trailers started with category_id: %s' % category_id)
     url = '%s%s.xml' % (MAIN_URL, category_id)
     tree = __get_tree(url)
-    trailers = [{'id': m.get('id'),
-                 'title': m.title.string,
-                 'thumb': m.poster.xlarge.string,
-                 'duration': m.runtime.string,
-                 'rate': m.rating.string,
-                 'studio': m.studio.string,
-                 'director': m.director.string,
-                 'url': m.preview.large.string + "?|User-Agent=%s" % UA,
-                } for m in tree.findAll('movieinfo')]
+    trailers = []
+    for m in tree.findAll('movieinfo'):
+        trailer = {'movie_id': m.get('id'),
+                   'title': m.title.string,
+                   'duration': m.runtime.string,
+                   'rate': m.rating.string,
+                   'studio': m.studio.string,
+                   'post_date': __format_date(m.postdate.string),
+                   'release_date': __format_date(m.releasedate.string),
+                   'copyright': m.copyright.string,
+                   'director': m.director.string,
+                   'plot': m.description.string,
+                   'thumb': m.poster.xlarge.string,}
+        if m.get('genre'):
+            trailer['genre'] = [g.string for g in m.genre.findAll('name')]
+        if m.get('cast'):
+            trailer['cast'] = [c.string for c in m.cast.findAll('name')]
+        trailer['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
+        trailers.append(trailer)
     if DEBUG:
         for t in trailers:
             print t
     __log('get_trailers finished with %d elements' % len(trailers))
     return trailers
+
+
+def __format_date(date_str):
+    y, m, d = date_str.split('-')
+    return '.'.join((d, m, y, ))
 
 
 def __get_tree(url, referer=None):
