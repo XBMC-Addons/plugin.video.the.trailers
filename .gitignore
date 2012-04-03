@@ -1,0 +1,7 @@
+
+pep*
+release.py
+*.pyc
+*.pyo
+test*
+*.zip
