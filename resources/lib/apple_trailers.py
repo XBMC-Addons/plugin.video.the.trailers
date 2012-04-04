@@ -22,7 +22,7 @@ from urllib2 import urlopen, Request, HTTPError, URLError
 
 UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
-MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current%s.xml'
+MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
 MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
 
 FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
@@ -37,77 +37,86 @@ def get_filter_criteria():
     return FILTER_CRITERIA
 
 
-def get_movies(filters={}, quality=None):
-    __log('get_movies started with filters: %s quality: %s'
-          % (filters, quality))
-    if quality:
-        assert quality in QUALITIES
-        url = MAIN_URL % '_%s' % quality
-    else:
-        url = MAIN_URL % ''
+def get_movies(filters={}):
+    __log('get_movies started with filters: %s' % filters)
+    url = MAIN_URL
     r_movie_string = re.compile('/movies/(.+)/')
     tree = __get_tree(url)
-    trailers = []
+    movies = []
     for m in tree.findAll('movieinfo'):
-        trailer = {'movie_id': m.get('id'),
-                   'source_id': 'apple',
-                   'title': m.title.string,
-                   'duration': m.runtime.string,
-                   'mpaa': m.rating.string,
-                   'studio': m.studio.string,
-                   'post_date': __format_date(m.postdate.string),
-                   'release_date': __format_date(m.releasedate.string),
-                   'year': __format_year(m.releasedate.string),
-                   'copyright': m.copyright.string,
-                   'director': m.director.string,
-                   'plot': m.description.string,
-                   'thumb': m.poster.xlarge.string, }
+        movie = {'movie_id': m.get('id'),
+                 'source_id': 'apple',
+                 'title': m.title.string,
+                 'duration': m.runtime.string,
+                 'mpaa': m.rating.string,
+                 'studio': m.studio.string,
+                 'post_date': __format_date(m.postdate.string),
+                 'release_date': __format_date(m.releasedate.string),
+                 'year': __format_year(m.releasedate.string),
+                 'copyright': m.copyright.string,
+                 'director': m.director.string,
+                 'plot': m.description.string,
+                 'thumb': m.poster.xlarge.string, }
         if m.genre:
-            trailer['genre'] = [g.string for g in m.genre.contents]
+            movie['genre'] = [g.string.strip() for g in m.genre.contents]
         if m.cast:
-            trailer['cast'] = [c.string.strip() for c in m.cast.contents]
-        trailer['trailer_url'] = ('%s?|User-Agent=%s'
+            movie['cast'] = [c.string.strip() for c in m.cast.contents]
+        movie['movie_url'] = ('%s?|User-Agent=%s'
                                   % (m.preview.large.string, UA))
-        trailer['movie_string'] = re.search(r_movie_string,
+        movie['movie_string'] = re.search(r_movie_string,
                                             m.preview.large.string).group(1)
-        trailer['size'] = m.preview.large['filesize']
+        movie['size'] = m.preview.large['filesize']
         if filters:
             match = True
             for field, content in filters.items():
-                match = match and content in trailer.get(field)
+                match = match and content in movie.get(field)
             if not match:
                 continue
-        trailers.append(trailer)
+        movies.append(movie)
     if DEBUG:
-        for t in trailers:
-            print t
-    __log('get_movies finished with %d elements' % len(trailers))
-    return trailers
+        for m in movies:
+            print m
+    __log('get_movies finished with %d elements' % len(movies))
+    return movies
 
 
 def get_trailer(movie_id, quality):
     f = {'movie_id': movie_id}
-    trailers = get_movies(filters=f, quality=quality)
-    if trailers:
-        return trailers[0]['trailer_url']
+    movies = get_movies(filters=f, quality=quality)
+    if movies:
+        return movies[0]['trailer_url']
 
 
 def get_trailers(movie_id):
     f = {'movie_id': movie_id}
-    trailers = get_movies(filters=f)
-    if not trailers:
+    movies = get_movies(filters=f)
+    if not movies:
         raise Exception
-    movie_string = trailers[0]['movie_string']
+    movie_string = movies[0]['movie_string']
     url = MOVIE_URL % movie_string
-    tree = __get_tree(url)
-    print tree.tracklist.plist.findAll('dict')
+    html = __get_url(url)
+    r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
+    section = re.search(r_section, html).group(1)
+    tree = BeautifulSoup(section, convertEntities=BeautifulSoup.HTML_ENTITIES)
     trailers = []
+    for s in tree.findAll('dict'):
+        title = url = None
+        for k in s.findAll('key'):
+            if k.string == 'songName':
+                title = k.nextSibling.string
+            elif k.string == 'previewURL':
+                url = k.nextSibling.string
+            if title and url:
+                trailers.append({'title': title,
+                                 'url': ('%s?|User-Agent=%s' % (url, UA)), })
+                break
+    return trailers
 
 
 def get_filter_content(criteria):
     assert criteria in FILTER_CRITERIA
-    trailers = get_movies()
-    return __filter(trailers, criteria)
+    movies = get_movies()
+    return __filter(movies, criteria)
 
 
 def __format_date(date_str):

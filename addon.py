@@ -126,16 +126,18 @@ def show_movies(source_id):
     return __add_items(entries)
 
 
-@plugin.route('/<source_id>/play/<movie_id>')
-def play_trailer(source_id, movie_id):
-    __log('play_trailer started with source_id=%s movie_id=%s'
+@plugin.route('/<source_id>/trailer/<movie_id>')
+def show_trailer(source_id, movie_id):
+    __log('show_trailer started with source_id=%s movie_id=%s'
           % (source_id, movie_id))
     source = __get_source(source_id)
-    quality = '720p'
-#    source.get_trailers(movie_id)  # fixme
-    video_url = source.get_trailer(movie_id, quality)
-    __log('play_trailer ended with video_url=%s' % video_url)
-    return plugin.set_resolved_url(video_url)
+    trailers = source.get_trailers(movie_id)
+    items = [{'label': t['title'],
+              'url': t['url'],
+              'is_folder': False,
+              'is_playable': True}
+             for t in trailers]
+    return plugin.add_items(items)
 
 
 @plugin.route('/<source_id>/<filter_criteria>/')
@@ -187,9 +189,7 @@ def __add_items(entries):
                                'year': int(e.get('year', 0)),
                                'rating': float(e.get('rating', 0.0)),
                                'director': e.get('director', '')},
-                      'is_folder': False,
-                      'is_playable': True,
-                      'url': plugin.url_for('play_trailer',
+                      'url': plugin.url_for('show_trailer',
                                             source_id=e['source_id'],
                                             movie_id=e['movie_id'])})
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
