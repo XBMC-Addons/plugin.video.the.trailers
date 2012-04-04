@@ -36,7 +36,7 @@ def get_categories():
     return CATEGORIES
 
 
-def get_trailers(category_id):
+def get_trailers(category_id, filters={}):
     __log('get_trailers started with category_id: %s' % category_id)
     url = '%s%s.xml' % (MAIN_URL, category_id)
     tree = __get_tree(url)
@@ -61,6 +61,12 @@ def get_trailers(category_id):
             trailer['cast'] = [c.string for c in m.cast.findAll('name')]
         trailer['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
         trailer['size'] = m.preview.large['filesize']
+        if filters:
+            match = True
+            for field, content in filters.items():
+                match = match and content in trailer.get(field)
+            if not match:
+                continue
         trailers.append(trailer)
     if DEBUG:
         for t in trailers:
