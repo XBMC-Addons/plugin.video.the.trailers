@@ -40,6 +40,12 @@ THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
 SOURCES = [{'title': 'Apple Movie Trailers',
             'source_id': 'apple'}, ]
 
+STRINGS = {'all': 30000,
+           'year': 30001,
+           'studio': 30002,
+           'cast': 30003,
+           'genre': 30004}
+
 
 class Plugin_mod(Plugin):
 
@@ -99,12 +105,12 @@ def show_filters(source_id):
           % source_id)
     source = __get_source(source_id)
     entries = source.get_filter_criteria()
-    items = [{'label': e,
+    items = [{'label': _(e),
               'url': plugin.url_for('show_filter_content',
                                     source_id=source_id,
                                     filter_criteria=e)}
              for e in entries]
-    items.insert(0, {'label': 'All',
+    items.insert(0, {'label': _('all'),
                      'url': plugin.url_for('show_trailers',
                                             source_id=source_id)})
     __log('show_filters end')
@@ -190,6 +196,15 @@ def __get_source(source_id):
         return apple_trailers
     else:
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
+
+
+def _(s):
+    s_id = STRINGS.get(s)
+    if s_id:
+        return plugin.get_string(s_id)
+    else:
+        __log('missing translation for s:"%s"' % s)
+        return s
 
 
 def __log(text):

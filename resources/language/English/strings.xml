@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
     <!-- General entries -->
-
+    <string id="30000">All trailer</string>
+    <string id="30001">Browse by Year</string>
+    <string id="30002">Browse by Studio</string>
+    <string id="30003">Browse by Cast</string>
+    <string id="30004">Browse by Genre</string>
     <!-- Settings -->
     <string id="30010">Force ViewMode to Thumbnail</string>
     <string id="30011">Update container on page switch</string>
