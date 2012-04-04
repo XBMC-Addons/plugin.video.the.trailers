@@ -61,10 +61,10 @@ def get_movies(filters={}):
             movie['genre'] = [g.string.strip() for g in m.genre.contents]
         if m.cast:
             movie['cast'] = [c.string.strip() for c in m.cast.contents]
-        movie['movie_url'] = ('%s?|User-Agent=%s'
+        movie['trailer_url'] = ('%s?|User-Agent=%s'
                                   % (m.preview.large.string, UA))
         movie['movie_string'] = re.search(r_movie_string,
-                                            m.preview.large.string).group(1)
+                                          m.preview.large.string).group(1)
         movie['size'] = m.preview.large['filesize']
         if filters:
             match = True
@@ -81,6 +81,8 @@ def get_movies(filters={}):
 
 
 def get_trailer(movie_id, quality):
+    __log('get_trailer started with movie_id: %s quality: %s'
+          % (movie_id, quality))
     f = {'movie_id': movie_id}
     movies = get_movies(filters=f, quality=quality)
     if movies:
@@ -88,6 +90,7 @@ def get_trailer(movie_id, quality):
 
 
 def get_trailers(movie_id):
+    __log('get_trailers started with movie_id: %s' % movie_id)
     f = {'movie_id': movie_id}
     movies = get_movies(filters=f)
     if not movies:
@@ -114,6 +117,7 @@ def get_trailers(movie_id):
 
 
 def get_filter_content(criteria):
+    __log('get_filter_content started with criteria: %s' % criteria)
     assert criteria in FILTER_CRITERIA
     movies = get_movies()
     return __filter(movies, criteria)
