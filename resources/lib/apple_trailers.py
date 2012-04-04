@@ -28,7 +28,7 @@ CATEGORIES = [{'title': 'Current',
               {'title': 'Newest 720P',
                'category_id': 'newest_720p'}, ]
 
-FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre', 'cast')
+FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
 
 DEBUG = False
 
@@ -43,9 +43,9 @@ def get_filter_criteria():
     return FILTER_CRITERIA
 
 
-def get_trailers(category_id, filters={}):
-    __log('get_trailers started with category_id: %s' % category_id)
-    url = '%s%s.xml' % (MAIN_URL, category_id)
+def get_trailers(filters={}):
+    __log('get_trailers started with filters: %s' % filters)
+    url = '%s%s.xml' % (MAIN_URL, 'current')
     tree = __get_tree(url)
     trailers = []
     for m in tree.findAll('movieinfo'):
@@ -81,9 +81,9 @@ def get_trailers(category_id, filters={}):
     return trailers
 
 
-def get_filter_content(category_id, criteria):
+def get_filter_content(criteria):
     assert criteria in FILTER_CRITERIA
-    trailers = get_trailers(category_id)
+    trailers = get_trailers()
     return __filter(trailers, criteria)
 
 

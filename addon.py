@@ -37,6 +37,9 @@ THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
                       'skin.transparency': 53,
                       'skin.xeebo': 55}
 
+SOURCES = [{'title': 'Apple Movie Trailers',
+            'source_id': 'apple'}, ]
+
 
 class Plugin_mod(Plugin):
 
@@ -82,38 +85,65 @@ plugin = Plugin_mod(__addon_name__, __id__, __file__)
 @plugin.route('/', default=True)
 def show_sources():
     __log('show_sources start')
-    entries = [{'title': 'Apple Movie Trailers',
-                'source_id': 'apple'}, ]
-    items = [{'label': e['title'],
-              'url': plugin.url_for('show_categories',
-                                    source_id=e['source_id'])}
-             for e in entries]
+    items = [{'label': s['title'],
+              'url': plugin.url_for('show_filters',
+                                    source_id=s['source_id'])}
+             for s in SOURCES]
     __log('show_sources end')
     return plugin.add_items(items)
 
 
-@plugin.route('/source/<source_id>/')
-def show_categories(source_id):
-    __log('show_categories started with source_id=%s'
+@plugin.route('/<source_id>/')
+def show_filters(source_id):
+    __log('show_filters started with source_id=%s'
           % source_id)
     source = __get_source(source_id)
-    entries = source.get_categories()
-    items = [{'label': e['title'],
-              'url': plugin.url_for('show_trailers',
+    entries = source.get_filter_criteria()
+    items = [{'label': e,
+              'url': plugin.url_for('show_filter_content',
                                     source_id=source_id,
-                                    category_id=e['category_id'])}
+                                    filter_criteria=e)}
              for e in entries]
-    __log('show_categories end')
+    items.insert(0, {'label': 'All',
+                     'url': plugin.url_for('show_trailers',
+                                            source_id=source_id)})
+    __log('show_filters end')
     return plugin.add_items(items)
 
 
-@plugin.route('/source/<source_id>/<category_id>')
-def show_trailers(source_id, category_id):
-    __log('show_trailers started with source_id=%s, category_id=%s'
-          % (source_id, category_id))
+@plugin.route('/<source_id>/all/')
+def show_trailers(source_id):
+    __log('show_trailers started with source_id=%s ' % source_id)
     source = __get_source(source_id)
-    entries = source.get_trailers(category_id)
+    entries = source.get_trailers()
     __log('show_trailers end')
+    return __add_items(entries)
+
+
+@plugin.route('/<source_id>/<filter_criteria>/')
+def show_filter_content(source_id, filter_criteria):
+    __log('show_filter_content started with source_id=%s filter_criteria=%s'
+          % (source_id, filter_criteria))
+    source = __get_source(source_id)
+    entries = source.get_filter_content(filter_criteria)
+    items = [{'label': e,
+              'url': plugin.url_for('show_trailers_filtered',
+                                    source_id=source_id,
+                                    filter_criteria=filter_criteria,
+                                    filter_content=e)}
+             for e in entries]
+    __log('show_filter_content end')
+    return plugin.add_items(items)
+
+
+@plugin.route('/<source_id>/<filter_criteria>/<filter_content>')
+def show_trailers_filtered(source_id, filter_criteria, filter_content):
+    __log(('show_trailers_filtered started with source_id=%s '
+           'filter_criteria=%s filter_content=%s')
+          % (source_id, filter_criteria, filter_content))
+    source = __get_source(source_id)
+    entries = source.get_trailers({filter_criteria: filter_content})
+    __log('show_trailers_filtered end')
     return __add_items(entries)
 
 
