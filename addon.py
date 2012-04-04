@@ -111,18 +111,18 @@ def show_filters(source_id):
                                     filter_criteria=e)}
              for e in entries]
     items.insert(0, {'label': _('all'),
-                     'url': plugin.url_for('show_trailers',
+                     'url': plugin.url_for('show_movies',
                                             source_id=source_id)})
     __log('show_filters end')
     return plugin.add_items(items)
 
 
 @plugin.route('/<source_id>/all/')
-def show_trailers(source_id):
-    __log('show_trailers started with source_id=%s ' % source_id)
+def show_movies(source_id):
+    __log('show_movies started with source_id=%s ' % source_id)
     source = __get_source(source_id)
-    entries = source.get_trailers()
-    __log('show_trailers end')
+    entries = source.get_movies()
+    __log('show_movies end')
     return __add_items(entries)
 
 
@@ -132,6 +132,7 @@ def play_trailer(source_id, movie_id):
           % (source_id, movie_id))
     source = __get_source(source_id)
     quality = '720p'
+#    source.get_trailers(movie_id)  # fixme
     video_url = source.get_trailer(movie_id, quality)
     __log('play_trailer ended with video_url=%s' % video_url)
     return plugin.set_resolved_url(video_url)
@@ -144,7 +145,7 @@ def show_filter_content(source_id, filter_criteria):
     source = __get_source(source_id)
     entries = source.get_filter_content(filter_criteria)
     items = [{'label': e,
-              'url': plugin.url_for('show_trailers_filtered',
+              'url': plugin.url_for('show_movies_filtered',
                                     source_id=source_id,
                                     filter_criteria=filter_criteria,
                                     filter_content=e)}
@@ -154,13 +155,13 @@ def show_filter_content(source_id, filter_criteria):
 
 
 @plugin.route('/<source_id>/<filter_criteria>/<filter_content>/')
-def show_trailers_filtered(source_id, filter_criteria, filter_content):
-    __log(('show_trailers_filtered started with source_id=%s '
+def show_movies_filtered(source_id, filter_criteria, filter_content):
+    __log(('show_movies_filtered started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
           % (source_id, filter_criteria, filter_content))
     source = __get_source(source_id)
-    entries = source.get_trailers({filter_criteria: filter_content})
-    __log('show_trailers_filtered end')
+    entries = source.get_movies({filter_criteria: filter_content})
+    __log('show_movies_filtered end')
     return __add_items(entries)
 
 

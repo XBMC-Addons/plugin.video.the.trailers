@@ -15,6 +15,7 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
 from BeautifulSoup import BeautifulSoup
 from urllib import unquote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
@@ -22,6 +23,7 @@ from urllib2 import urlopen, Request, HTTPError, URLError
 UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
 MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current%s.xml'
+MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
 
 FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
 
@@ -35,14 +37,15 @@ def get_filter_criteria():
     return FILTER_CRITERIA
 
 
-def get_trailers(filters={}, quality=None):
-    __log('get_trailers started with filters: %s quality: %s'
+def get_movies(filters={}, quality=None):
+    __log('get_movies started with filters: %s quality: %s'
           % (filters, quality))
     if quality:
         assert quality in QUALITIES
         url = MAIN_URL % '_%s' % quality
     else:
         url = MAIN_URL % ''
+    r_movie_string = re.compile('/movies/(.+)/')
     tree = __get_tree(url)
     trailers = []
     for m in tree.findAll('movieinfo'):
@@ -65,6 +68,8 @@ def get_trailers(filters={}, quality=None):
             trailer['cast'] = [c.string.strip() for c in m.cast.contents]
         trailer['trailer_url'] = ('%s?|User-Agent=%s'
                                   % (m.preview.large.string, UA))
+        trailer['movie_string'] = re.search(r_movie_string,
+                                            m.preview.large.string).group(1)
         trailer['size'] = m.preview.large['filesize']
         if filters:
             match = True
@@ -76,20 +81,32 @@ def get_trailers(filters={}, quality=None):
     if DEBUG:
         for t in trailers:
             print t
-    __log('get_trailers finished with %d elements' % len(trailers))
+    __log('get_movies finished with %d elements' % len(trailers))
     return trailers
 
 
 def get_trailer(movie_id, quality):
     f = {'movie_id': movie_id}
-    trailers = get_trailers(filters=f, quality=quality)
+    trailers = get_movies(filters=f, quality=quality)
     if trailers:
         return trailers[0]['trailer_url']
 
 
+def get_trailers(movie_id):
+    f = {'movie_id': movie_id}
+    trailers = get_movies(filters=f)
+    if not trailers:
+        raise Exception
+    movie_string = trailers[0]['movie_string']
+    url = MOVIE_URL % movie_string
+    tree = __get_tree(url)
+    print tree.tracklist.plist.findAll('dict')
+    trailers = []
+
+
 def get_filter_content(criteria):
     assert criteria in FILTER_CRITERIA
-    trailers = get_trailers()
+    trailers = get_movies()
     return __filter(trailers, criteria)
 
 
