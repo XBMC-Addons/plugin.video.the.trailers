@@ -90,13 +90,9 @@ plugin = Plugin_mod(__addon_name__, __id__, __file__)
 
 @plugin.route('/', default=True)
 def show_sources():
-    __log('show_sources start')
-    items = [{'label': s['title'],
-              'url': plugin.url_for('show_filters',
-                                    source_id=s['source_id'])}
-             for s in SOURCES]
-    __log('show_sources end')
-    return plugin.add_items(items)
+    __log('show_sources')
+    return __add_items(SOURCES, callback='show_filters',
+                       callback_args=['source_id'])
 
 
 @plugin.route('/<source_id>/')
@@ -123,7 +119,8 @@ def show_movies(source_id):
     source = __get_source(source_id)
     entries = source.get_movies()
     __log('show_movies end')
-    return __add_items(entries)
+    return __add_items(entries, callback='show_trailer_types',
+                       callback_args=['source_id', 'movie_id'])
 
 
 @plugin.route('/<source_id>/trailer/<movie_id>')
@@ -132,13 +129,8 @@ def show_trailer_types(source_id, movie_id):
           % (source_id, movie_id))
     source = __get_source(source_id)
     types = source.get_trailer_type(movie_id)
-    items = [{'label': t['title'],
-              'url': plugin.url_for('show_trailer',
-                                    source_id=source_id,
-                                    trailer_type=t['type'],
-                                    movie_id=movie_id)}
-             for t in types]
-    return plugin.add_items(items)
+    return __add_items(types, callback='show_trailer',
+                       callback_args=['source_id', 'trailer_type', 'movie_id'])
 
 
 @plugin.route('/<source_id>/trailer/<movie_id>/<trailer_type>/')
@@ -147,12 +139,7 @@ def show_trailer(source_id, movie_id, trailer_type):
           % (source_id, trailer_type, movie_id))
     source = __get_source(source_id)
     trailers = source.get_trailers(movie_id, trailer_type)
-    items = [{'label': t['title'],
-              'url': t['url'],
-              'is_folder': False,
-              'is_playable': True}
-             for t in trailers]
-    return plugin.add_items(items)
+    return __add_items(trailers)
 
 
 @plugin.route('/<source_id>/<filter_criteria>/')
@@ -179,16 +166,28 @@ def show_movies_filtered(source_id, filter_criteria, filter_content):
     source = __get_source(source_id)
     entries = source.get_movies({filter_criteria: filter_content})
     __log('show_movies_filtered end')
-    return __add_items(entries)
+    return __add_items(entries, callback='show_trailer_types',
+                       callback_args=['source_id', 'movie_id'])
 
 
-def __add_items(entries):
+def __add_items(entries, callback=None, callback_args=[]):
     items = []
     force_viewmode = plugin.get_setting('force_viewmode') == 'true'
     has_icons = False
     for e in entries:
         if force_viewmode and not has_icons and e.get('thumb', False):
             has_icons = True
+        callback_kwargs = {}
+        for k in callback_args:
+            callback_kwargs[k] = e[k]
+        if callback:
+            url = plugin.url_for(callback, **callback_kwargs)
+            is_folder = True
+            is_playable = False
+        else:
+            url = e['url']
+            is_folder = False
+            is_playable = True
         items.append({'label': e['title'],
                       'iconImage': e.get('thumb', 'DefaultVideo.png'),
                       'info': {'title': e.get('title'),
@@ -204,9 +203,9 @@ def __add_items(entries):
                                'year': int(e.get('year', 0)),
                                'rating': float(e.get('rating', 0.0)),
                                'director': e.get('director', '')},
-                      'url': plugin.url_for('show_trailer_types',
-                                            source_id=e['source_id'],
-                                            movie_id=e['movie_id'])})
+                      'url': url,
+                      'is_playable': is_playable,
+                      'is_folder': is_folder})
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,

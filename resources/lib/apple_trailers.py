@@ -29,6 +29,8 @@ FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
 
 QUALITIES = ('480p', '720p', )
 
+SOURCE_ID = 'apple'
+
 DEBUG = False
 
 
@@ -45,7 +47,7 @@ def get_movies(filters={}):
     movies = []
     for m in tree.findAll('movieinfo'):
         movie = {'movie_id': m.get('id'),
-                 'source_id': 'apple',
+                 'source_id': SOURCE_ID,
                  'title': m.title.string,
                  'duration': m.runtime.string,
                  'mpaa': m.rating.string,
@@ -104,7 +106,9 @@ def get_trailer_type(movie_id):
         if t.find('b'):
             type_string = re.search(r_type, t['url']).group(1)
             trailer_types.append({'title': t['draggingname'],
-                                  'type': type_string})
+                                  'source_id': SOURCE_ID,
+                                  'movie_id': movie_id,
+                                  'trailer_type': type_string})
     return trailer_types
 
 
@@ -131,6 +135,8 @@ def get_trailers(movie_id, trailer_type='index'):
                 url = k.nextSibling.string
             if title and url:
                 trailers.append({'title': title,
+                                 'source_id': SOURCE_ID,
+                                 'movie_id': movie_id,
                                  'url': ('%s?|User-Agent=%s' % (url, UA)), })
                 break
     return trailers
