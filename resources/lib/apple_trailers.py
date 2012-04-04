@@ -28,12 +28,19 @@ CATEGORIES = [{'title': 'Current',
               {'title': 'Newest 720P',
                'category_id': 'newest_720p'}, ]
 
+FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre', 'cast')
+
 DEBUG = False
 
 
 def get_categories():
     __log('get_categories')
     return CATEGORIES
+
+
+def get_filter_criteria():
+    __log('get_filter_criteria')
+    return FILTER_CRITERIA
 
 
 def get_trailers(category_id, filters={}):
@@ -55,10 +62,9 @@ def get_trailers(category_id, filters={}):
                    'plot': m.description.string,
                    'thumb': m.poster.xlarge.string, }
         if m.genre:
-            genres = [g.string for g in m.genre.findAll('name')]
-            trailer['genre'] = __format_group(genres)
+            trailer['genre'] = [g.string for g in m.genre.contents]
         if m.cast:
-            trailer['cast'] = [c.string for c in m.cast.findAll('name')]
+            trailer['cast'] = [c.string.strip() for c in m.cast.contents]
         trailer['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
         trailer['size'] = m.preview.large['filesize']
         if filters:
@@ -75,6 +81,12 @@ def get_trailers(category_id, filters={}):
     return trailers
 
 
+def get_filter_content(category_id, criteria):
+    assert criteria in FILTER_CRITERIA
+    trailers = get_trailers(category_id)
+    return __filter(trailers, criteria)
+
+
 def __format_date(date_str):
     y, m, d = date_str.split('-')
     return '.'.join((d, m, y, ))
@@ -84,8 +96,13 @@ def __format_year(date_str):
     return date_str.split('-', 1)[0]
 
 
-def __format_group(group):
-    return ', '.join(group)
+def __filter(ld, f):
+    ll = [d[f] for d in ld if d.get(f)]
+    if isinstance(ll[0], list):
+        s = set([i for ll in ll for i in ll])
+    else:
+        s = set(ll)
+    return sorted(s)
 
 
 def __get_tree(url, referer=None):

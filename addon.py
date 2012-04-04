@@ -134,7 +134,7 @@ def __add_items(entries):
                                'mpaa': e.get('mpaa', ''),
                                'plot': e.get('plot', ''),
                                'cast': e.get('cast', []),
-                               'genre': e.get('genre', ''),
+                               'genre': ', '.join(e.get('genre', [])),
                                'studio': e.get('studio', ''),
                                'date': e.get('post_date', ''),
                                'premiered': e.get('release_date', ''),
