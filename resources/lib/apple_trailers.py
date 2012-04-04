@@ -21,21 +21,13 @@ from urllib2 import urlopen, Request, HTTPError, URLError
 
 UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
-MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/'
-
-CATEGORIES = [{'title': 'Current',
-               'category_id': 'current'},
-              {'title': 'Newest 720P',
-               'category_id': 'newest_720p'}, ]
+MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current%s.xml'
 
 FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
 
+QUALITIES = ('480p', '720p', )
+
 DEBUG = False
-
-
-def get_categories():
-    __log('get_categories')
-    return CATEGORIES
 
 
 def get_filter_criteria():
@@ -43,13 +35,19 @@ def get_filter_criteria():
     return FILTER_CRITERIA
 
 
-def get_trailers(filters={}):
-    __log('get_trailers started with filters: %s' % filters)
-    url = '%s%s.xml' % (MAIN_URL, 'current')
+def get_trailers(filters={}, quality=None):
+    __log('get_trailers started with filters: %s quality: %s'
+          % (filters, quality))
+    if quality:
+        assert quality in QUALITIES
+        url = MAIN_URL % '_%s' % quality
+    else:
+        url = MAIN_URL % ''
     tree = __get_tree(url)
     trailers = []
     for m in tree.findAll('movieinfo'):
         trailer = {'movie_id': m.get('id'),
+                   'source_id': 'apple',
                    'title': m.title.string,
                    'duration': m.runtime.string,
                    'mpaa': m.rating.string,
@@ -65,7 +63,8 @@ def get_trailers(filters={}):
             trailer['genre'] = [g.string for g in m.genre.contents]
         if m.cast:
             trailer['cast'] = [c.string.strip() for c in m.cast.contents]
-        trailer['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
+        trailer['trailer_url'] = ('%s?|User-Agent=%s'
+                                  % (m.preview.large.string, UA))
         trailer['size'] = m.preview.large['filesize']
         if filters:
             match = True
@@ -79,6 +78,13 @@ def get_trailers(filters={}):
             print t
     __log('get_trailers finished with %d elements' % len(trailers))
     return trailers
+
+
+def get_trailer(movie_id, quality):
+    f = {'movie_id': movie_id}
+    trailers = get_trailers(filters=f, quality=quality)
+    if trailers:
+        return trailers[0]['trailer_url']
 
 
 def get_filter_content(criteria):

@@ -126,6 +126,17 @@ def show_trailers(source_id):
     return __add_items(entries)
 
 
+@plugin.route('/<source_id>/play/<movie_id>')
+def play_trailer(source_id, movie_id):
+    __log('play_trailer started with source_id=%s movie_id=%s'
+          % (source_id, movie_id))
+    source = __get_source(source_id)
+    quality = '720p'
+    video_url = source.get_trailer(movie_id, quality)
+    __log('play_trailer ended with video_url=%s' % video_url)
+    return plugin.set_resolved_url(video_url)
+
+
 @plugin.route('/<source_id>/<filter_criteria>/')
 def show_filter_content(source_id, filter_criteria):
     __log('show_filter_content started with source_id=%s filter_criteria=%s'
@@ -142,7 +153,7 @@ def show_filter_content(source_id, filter_criteria):
     return plugin.add_items(items)
 
 
-@plugin.route('/<source_id>/<filter_criteria>/<filter_content>')
+@plugin.route('/<source_id>/<filter_criteria>/<filter_content>/')
 def show_trailers_filtered(source_id, filter_criteria, filter_content):
     __log(('show_trailers_filtered started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
@@ -156,9 +167,7 @@ def show_trailers_filtered(source_id, filter_criteria, filter_content):
 def __add_items(entries):
     items = []
     force_viewmode = plugin.get_setting('force_viewmode') == 'true'
-    update_on_pageswitch = plugin.get_setting('update_on_pageswitch') == 'true'
     has_icons = False
-    is_update = False
     for e in entries:
         if force_viewmode and not has_icons and e.get('thumb', False):
             has_icons = True
@@ -179,20 +188,21 @@ def __add_items(entries):
                                'director': e.get('director', '')},
                       'is_folder': False,
                       'is_playable': True,
-                      'url': e['url']})
+                      'url': plugin.url_for('play_trailer',
+                                            source_id=e['source_id'],
+                                            movie_id=e['movie_id'])})
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,
                     xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
     __log('__add_items end')
-    return plugin.add_items(items, is_update=is_update,
-                            sort_method_ids=sort_methods,
+    return plugin.add_items(items, sort_method_ids=sort_methods,
                             override_view_mode=has_icons)
 
 
 def __get_source(source_id):
     if source_id == 'apple':
-        __log('__get_source using: %s' % 'AMT')
+        __log('__get_source using: %s' % source_id)
         return apple_trailers
     else:
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
