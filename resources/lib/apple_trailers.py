@@ -89,14 +89,34 @@ def get_trailer(movie_id, quality):
         return movies[0]['trailer_url']
 
 
-def get_trailers(movie_id):
-    __log('get_trailers started with movie_id: %s' % movie_id)
+def get_trailer_type(movie_id):
+    __log('get_trailer_type started with movie_id: %s' % movie_id)
     f = {'movie_id': movie_id}
     movies = get_movies(filters=f)
     if not movies:
         raise Exception
     movie_string = movies[0]['movie_string']
     url = MOVIE_URL % movie_string
+    tree = __get_tree(url)
+    r_type = re.compile('/moviesxml/s/.+?/.+?/(.+?).xml')
+    trailer_types = []
+    for t in tree.findAll('gotourl', {'target': 'main'}):
+        if t.find('b'):
+            type_string = re.search(r_type, t['url']).group(1)
+            trailer_types.append({'title': t['draggingname'],
+                                  'type': type_string})
+    return trailer_types
+
+
+def get_trailers(movie_id, trailer_type='index'):
+    __log('get_trailers started with movie_id: %s trailer_type: %s '
+          % (movie_id, trailer_type))
+    f = {'movie_id': movie_id}
+    movies = get_movies(filters=f)
+    if not movies:
+        raise Exception
+    movie_string = movies[0]['movie_string']
+    url = (MOVIE_URL % movie_string).replace('index', trailer_type)  # fixme
     html = __get_url(url)
     r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
     section = re.search(r_section, html).group(1)
