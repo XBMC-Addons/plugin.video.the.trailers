@@ -136,7 +136,16 @@ def show_movies_filtered(source_id, filter_criteria, filter_content):
                        callback_args=['source_id', 'movie_id'])
 
 
-@plugin.route('/<source_id>/trailer/<movie_id>')
+@plugin.route('/<source_id>/play/<movie_id>')
+def play_trailer(source_id, movie_id):
+    __log('play_trailer started with source_id=%s movie_id=%s'
+          % (source_id, movie_id))
+    source = __get_source(source_id)
+    trailer_url = source.get_trailer(movie_id)
+    return plugin.set_resolved_url(trailer_url)
+
+
+@plugin.route('/<source_id>/trailer/<movie_id>/')
 def show_trailer_types(source_id, movie_id):
     __log('show_trailer_types started with source_id=%s movie_id=%s'
           % (source_id, movie_id))
