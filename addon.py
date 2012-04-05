@@ -101,16 +101,8 @@ def show_filters(source_id):
           % source_id)
     source = __get_source(source_id)
     entries = source.get_filter_criteria()
-    items = [{'label': _(e),
-              'url': plugin.url_for('show_filter_content',
-                                    source_id=source_id,
-                                    filter_criteria=e)}
-             for e in entries]
-    items.insert(0, {'label': _('all'),
-                     'url': plugin.url_for('show_movies',
-                                            source_id=source_id)})
-    __log('show_filters end')
-    return plugin.add_items(items)
+    return __add_items(entries, callback='show_filter_content',
+                       callback_args=['source_id', 'filter_criteria'])
 
 
 @plugin.route('/<source_id>/all/')
@@ -119,6 +111,29 @@ def show_movies(source_id):
     source = __get_source(source_id)
     entries = source.get_movies()
     __log('show_movies end')
+    return __add_items(entries, callback='show_trailer_types',
+                       callback_args=['source_id', 'movie_id'])
+
+
+@plugin.route('/<source_id>/<filter_criteria>/')
+def show_filter_content(source_id, filter_criteria):
+    __log('show_filter_content started with source_id=%s filter_criteria=%s'
+          % (source_id, filter_criteria))
+    source = __get_source(source_id)
+    entries = source.get_filter_content(filter_criteria)
+    return __add_items(entries, callback='show_movies_filtered',
+                       callback_args=['source_id', 'filter_criteria',
+                                      'filter_content'])
+
+
+@plugin.route('/<source_id>/<filter_criteria>/<filter_content>/')
+def show_movies_filtered(source_id, filter_criteria, filter_content):
+    __log(('show_movies_filtered started with source_id=%s '
+           'filter_criteria=%s filter_content=%s')
+          % (source_id, filter_criteria, filter_content))
+    source = __get_source(source_id)
+    entries = source.get_movies({filter_criteria: filter_content})
+    __log('show_movies_filtered end')
     return __add_items(entries, callback='show_trailer_types',
                        callback_args=['source_id', 'movie_id'])
 
@@ -140,34 +155,6 @@ def show_trailer(source_id, movie_id, trailer_type):
     source = __get_source(source_id)
     trailers = source.get_trailers(movie_id, trailer_type)
     return __add_items(trailers)
-
-
-@plugin.route('/<source_id>/<filter_criteria>/')
-def show_filter_content(source_id, filter_criteria):
-    __log('show_filter_content started with source_id=%s filter_criteria=%s'
-          % (source_id, filter_criteria))
-    source = __get_source(source_id)
-    entries = source.get_filter_content(filter_criteria)
-    items = [{'label': e,
-              'url': plugin.url_for('show_movies_filtered',
-                                    source_id=source_id,
-                                    filter_criteria=filter_criteria,
-                                    filter_content=e)}
-             for e in entries]
-    __log('show_filter_content end')
-    return plugin.add_items(items)
-
-
-@plugin.route('/<source_id>/<filter_criteria>/<filter_content>/')
-def show_movies_filtered(source_id, filter_criteria, filter_content):
-    __log(('show_movies_filtered started with source_id=%s '
-           'filter_criteria=%s filter_content=%s')
-          % (source_id, filter_criteria, filter_content))
-    source = __get_source(source_id)
-    entries = source.get_movies({filter_criteria: filter_content})
-    __log('show_movies_filtered end')
-    return __add_items(entries, callback='show_trailer_types',
-                       callback_args=['source_id', 'movie_id'])
 
 
 def __add_items(entries, callback=None, callback_args=[]):

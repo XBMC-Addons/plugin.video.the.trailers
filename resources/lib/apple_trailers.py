@@ -25,13 +25,27 @@ UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
 MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
 
-FILTER_CRITERIA = ('year', 'studio', 'cast', 'genre')
-
 QUALITIES = ('480p', '720p', )
 
 SOURCE_ID = 'apple'
 
 DEBUG = False
+
+FILTER_CRITERIA = [{'title': 'all',
+                    'source_id': SOURCE_ID,
+                    'filter_criteria': 'all'},
+                   {'title': 'year',
+                    'source_id': SOURCE_ID,
+                    'filter_criteria': 'year'},
+                   {'title': 'studio',
+                    'source_id': SOURCE_ID,
+                    'filter_criteria': 'studio'},
+                   {'title': 'cast',
+                    'source_id': SOURCE_ID,
+                    'filter_criteria': 'cast'},
+                   {'title': 'genre',
+                    'source_id': SOURCE_ID,
+                    'filter_criteria': 'genre'}, ]
 
 
 def get_filter_criteria():
@@ -146,7 +160,11 @@ def get_filter_content(criteria):
     __log('get_filter_content started with criteria: %s' % criteria)
     assert criteria in FILTER_CRITERIA
     movies = get_movies()
-    return __filter(movies, criteria)
+    items = [{'title': f,
+              'source_id': SOURCE_ID,
+              'filter_criteria': criteria,
+              'filter_content': f} for f in  __filter(movies, criteria)]
+    return items
 
 
 def __format_date(date_str):
