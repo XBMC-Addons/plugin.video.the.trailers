@@ -171,10 +171,10 @@ def __add_items(entries, callback=None, callback_args=[]):
     for e in entries:
         if force_viewmode and not has_icons and e.get('thumb', False):
             has_icons = True
-        callback_kwargs = {}
-        for k in callback_args:
-            callback_kwargs[k] = e[k]
-        if callback:
+        if callback and callback_args:
+            callback_kwargs = {}
+            for k in callback_args:
+                callback_kwargs[k] = e[k]
             url = plugin.url_for(callback, **callback_kwargs)
             is_folder = True
             is_playable = False
