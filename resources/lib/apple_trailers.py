@@ -16,7 +16,7 @@
 #
 
 import re
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulStoneSoup as BS
 from urllib import unquote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
 
@@ -25,7 +25,8 @@ UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
 MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
 
-QUALITIES = ('480p', '720p', )
+QUALITIES = ('i320.m4v', 'h320.mov', 'h480.mov', 'h640w.mov',
+             'h480p.mov', 'h720p.mov', 'h1080p.mov')
 
 SOURCE_ID = 'apple'
 
@@ -51,7 +52,7 @@ def get_filter_criteria():
     return FILTER_CRITERIA
 
 
-def get_movies(filters={}):
+def get_movies(filters={}, quality_code=None):
     __log('get_movies started with filters: %s' % filters)
     url = MAIN_URL
     r_movie_string = re.compile('/trailers/(.+?)/images/')
@@ -75,8 +76,10 @@ def get_movies(filters={}):
             movie['genre'] = [g.string.strip() for g in m.genre.contents]
         if m.cast:
             movie['cast'] = [c.string.strip() for c in m.cast.contents]
-        movie['trailer_url'] = ('%s?|User-Agent=%s'
-                                  % (m.preview.large.string, UA))
+        movie['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
+        if quality_code:
+            prefix = QUALITIES[quality_code]
+            movie['url'] = movie['url'].replace('h640w.mov', prefix)
         movie['movie_string'] = re.search(r_movie_string,
                                           m.poster.location.string).group(1)
         movie['size'] = m.preview.large['filesize']
@@ -89,14 +92,6 @@ def get_movies(filters={}):
         movies.append(movie)
     __log('get_movies finished with %d elements' % len(movies))
     return movies
-
-
-def get_trailer(movie_id, quality):
-    __log('get_trailer started with movie_id: %s quality: %s'
-          % (movie_id, quality))
-    f = {'movie_id': movie_id}
-    movies = get_movies(filters=f, quality=quality)
-    return movies[0]['trailer_url']
 
 
 def get_trailer_type(movie_id):
@@ -128,11 +123,11 @@ def get_trailers(movie_id, trailer_type='index'):
     if not movies:
         raise Exception
     movie_string = movies[0]['movie_string']
-    url = (MOVIE_URL % movie_string).replace('index', trailer_type)  # fixme
+    url = (MOVIE_URL % movie_string).replace('index', trailer_type)
     html = __get_url(url)
     r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
     section = re.search(r_section, html).group(1)
-    tree = BeautifulSoup(section, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    tree = BS(section, convertEntities=BS.XML_ENTITIES)
     trailers = []
     for s in tree.findAll('dict'):
         title = url = None
@@ -181,7 +176,7 @@ def __filter(ld, f):
 
 def __get_tree(url, referer=None):
     html = __get_url(url, referer)
-    tree = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    tree = BS(html, convertEntities=BS.XML_ENTITIES)
     return tree
 
 

@@ -7,5 +7,16 @@
     <string id="30003">Browse by Cast</string>
     <string id="30004">Browse by Genre</string>
     <!-- Settings -->
-    <string id="30010">Force ViewMode to Thumbnail</string>
+    <string id="30010">Trailer choosing for movie</string>
+    <string id="30011">Ask me which trailer to play</string>
+    <string id="30012">Just playback most recent trailer</string>
+    <string id="30030">Prefered Trailer Quality</string>
+    <string id="30031">iPod</string>
+    <string id="30032">Small</string>
+    <string id="30033">Medium</string>
+    <string id="30034">Large</string>
+    <string id="30035">HD480p</string>
+    <string id="30036">HD720p</string>
+    <string id="30037">HD1080p</string>
+    <string id="30020">Force ViewMode to Thumbnail</string>
 </strings>

@@ -106,11 +106,7 @@ def show_filters(source_id):
 @plugin.route('/<source_id>/movies/all/')
 def show_movies(source_id):
     __log('show_movies started with source_id=%s ' % source_id)
-    source = __get_source(source_id)
-    entries = source.get_movies()
-    __log('show_movies end')
-    return __add_items(entries, callback='show_trailer_types',
-                       callback_args=['source_id', 'movie_id'])
+    return show_movies_filtered(source_id)
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/')
@@ -125,24 +121,25 @@ def show_filter_content(source_id, filter_criteria):
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/<filter_content>/')
-def show_movies_filtered(source_id, filter_criteria, filter_content):
+def show_movies_filtered(source_id, filter_criteria='', filter_content=''):
     __log(('show_movies_filtered started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
           % (source_id, filter_criteria, filter_content))
     source = __get_source(source_id)
-    entries = source.get_movies({filter_criteria: filter_content})
-    __log('show_movies_filtered end')
-    return __add_items(entries, callback='show_trailer_types',
-                       callback_args=['source_id', 'movie_id'])
-
-
-@plugin.route('/<source_id>/play/<movie_id>')
-def play_trailer(source_id, movie_id):
-    __log('play_trailer started with source_id=%s movie_id=%s'
-          % (source_id, movie_id))
-    source = __get_source(source_id)
-    trailer_url = source.get_trailer(movie_id)
-    return plugin.set_resolved_url(trailer_url)
+    if filter_criteria and filter_content:
+        entries = source.get_movies({filter_criteria: filter_content})
+    else:
+        entries = source.get_movies()
+    if plugin.get_setting('trailer_choosing') == '0':
+        __log('show_movies trailer_choosing')
+        entries = source.get_movies()
+        return __add_items(entries, callback='show_trailer_types',
+                           callback_args=['source_id', 'movie_id'])
+    elif plugin.get_setting('trailer_choosing') == '1':
+        __log('show_movies direct playback')
+        quality_code = int(plugin.get_setting('trailer_quality'))
+        entries = source.get_movies(quality_code=quality_code)
+        return __add_items(entries)
 
 
 @plugin.route('/<source_id>/trailer/<movie_id>/')
