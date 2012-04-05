@@ -54,7 +54,7 @@ def get_filter_criteria():
 def get_movies(filters={}):
     __log('get_movies started with filters: %s' % filters)
     url = MAIN_URL
-    r_movie_string = re.compile('/movies/(.+)/')
+    r_movie_string = re.compile('/trailers/(.+?)/images/')
     tree = __get_tree(url)
     movies = []
     for m in tree.findAll('movieinfo'):
@@ -78,7 +78,7 @@ def get_movies(filters={}):
         movie['trailer_url'] = ('%s?|User-Agent=%s'
                                   % (m.preview.large.string, UA))
         movie['movie_string'] = re.search(r_movie_string,
-                                          m.preview.large.string).group(1)
+                                          m.poster.location.string).group(1)
         movie['size'] = m.preview.large['filesize']
         if filters:
             match = True
