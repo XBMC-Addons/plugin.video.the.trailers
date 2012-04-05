@@ -29,8 +29,6 @@ QUALITIES = ('480p', '720p', )
 
 SOURCE_ID = 'apple'
 
-DEBUG = False
-
 FILTER_CRITERIA = [{'title': 'all',
                     'source_id': SOURCE_ID,
                     'filter_criteria': 'all'},
@@ -89,9 +87,6 @@ def get_movies(filters={}):
             if not match:
                 continue
         movies.append(movie)
-    if DEBUG:
-        for m in movies:
-            print m
     __log('get_movies finished with %d elements' % len(movies))
     return movies
 
@@ -101,8 +96,7 @@ def get_trailer(movie_id, quality):
           % (movie_id, quality))
     f = {'movie_id': movie_id}
     movies = get_movies(filters=f, quality=quality)
-    if movies:
-        return movies[0]['trailer_url']
+    return movies[0]['trailer_url']
 
 
 def get_trailer_type(movie_id):

@@ -23,8 +23,6 @@ import resources.lib.apple_trailers as apple_trailers
 __addon_name__ = 'The Trailers'
 __id__ = 'plugin.video.the.trailers'
 
-DEBUG = False
-
 THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
                       'skin.aeon.nox': 551,
                       'skin.confluence-vertical': 500,
@@ -105,7 +103,7 @@ def show_filters(source_id):
                        callback_args=['source_id', 'filter_criteria'])
 
 
-@plugin.route('/<source_id>/all/')
+@plugin.route('/<source_id>/movies/all/')
 def show_movies(source_id):
     __log('show_movies started with source_id=%s ' % source_id)
     source = __get_source(source_id)
@@ -115,7 +113,7 @@ def show_movies(source_id):
                        callback_args=['source_id', 'movie_id'])
 
 
-@plugin.route('/<source_id>/<filter_criteria>/')
+@plugin.route('/<source_id>/movies/<filter_criteria>/')
 def show_filter_content(source_id, filter_criteria):
     __log('show_filter_content started with source_id=%s filter_criteria=%s'
           % (source_id, filter_criteria))
@@ -126,7 +124,7 @@ def show_filter_content(source_id, filter_criteria):
                                       'filter_content'])
 
 
-@plugin.route('/<source_id>/<filter_criteria>/<filter_content>/')
+@plugin.route('/<source_id>/movies/<filter_criteria>/<filter_content>/')
 def show_movies_filtered(source_id, filter_criteria, filter_content):
     __log(('show_movies_filtered started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
