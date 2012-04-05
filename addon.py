@@ -126,19 +126,18 @@ def show_movies_filtered(source_id, filter_criteria='', filter_content=''):
            'filter_criteria=%s filter_content=%s')
           % (source_id, filter_criteria, filter_content))
     source = __get_source(source_id)
+    quality_code = int(plugin.get_setting('trailer_quality'))
     if filter_criteria and filter_content:
-        entries = source.get_movies({filter_criteria: filter_content})
+        entries = source.get_movies(quality_code=quality_code,
+                                    filters={filter_criteria: filter_content})
     else:
-        entries = source.get_movies()
+        entries = source.get_movies(quality_code=quality_code)
     if plugin.get_setting('trailer_choosing') == '0':
         __log('show_movies trailer_choosing')
-        entries = source.get_movies()
         return __add_items(entries, callback='show_trailer_types',
                            callback_args=['source_id', 'movie_id'])
     elif plugin.get_setting('trailer_choosing') == '1':
         __log('show_movies direct playback')
-        quality_code = int(plugin.get_setting('trailer_quality'))
-        entries = source.get_movies(quality_code=quality_code)
         return __add_items(entries)
 
 
