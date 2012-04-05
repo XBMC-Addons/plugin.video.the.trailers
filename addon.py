@@ -171,6 +171,7 @@ def __add_items(entries, callback=None, callback_args=[]):
             url = plugin.url_for(callback, **callback_kwargs)
             is_folder = True
             is_playable = False
+            e['title'] = _(e['title'])
         else:
             url = e['url']
             is_folder = False
@@ -215,7 +216,6 @@ def _(s):
     if s_id:
         return plugin.get_string(s_id)
     else:
-        __log('missing translation for s:"%s"' % s)
         return s
 
 
