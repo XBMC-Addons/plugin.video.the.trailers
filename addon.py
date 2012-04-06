@@ -36,7 +36,7 @@ THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
                       'skin.xeebo': 55}
 
 SOURCES = [{'title': 'Apple Movie Trailers',
-            'source_id': 'apple'}, ]
+            'id': 'apple'}, ]
 
 STRINGS = {'all': 30000,
            'year': 30001,
@@ -89,24 +89,19 @@ plugin = Plugin_mod(__addon_name__, __id__, __file__)
 @plugin.route('/', default=True)
 def show_sources():
     __log('show_sources')
-    return __add_items(SOURCES, callback='show_filters',
-                       callback_args=['source_id'])
+    items = [{'label': i['title'],
+              'url': plugin.url_for('show_all_movies',
+                                    source_id=i['id'])}
+             for i in SOURCES]
+    return plugin.add_items(items)
 
 
-@plugin.route('/<source_id>/')
-def show_filters(source_id):
-    __log('show_filters started with source_id=%s'
-          % source_id)
+@plugin.route('/<source_id>/movies/')
+def show_all_movies(source_id):
+    __log('show_all_movies started with source_id=%s' % source_id)
     source = __get_source(source_id)
-    entries = source.get_filter_criteria()
-    return __add_items(entries, callback='show_filter_content',
-                       callback_args=['source_id', 'filter_criteria'])
-
-
-@plugin.route('/<source_id>/movies/all/')
-def show_movies(source_id):
-    __log('show_movies started with source_id=%s ' % source_id)
-    return show_movies_filtered(source_id)
+    items = source.get_movies()
+    return __add_items(source_id, items)
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/')
@@ -114,73 +109,100 @@ def show_filter_content(source_id, filter_criteria):
     __log('show_filter_content started with source_id=%s filter_criteria=%s'
           % (source_id, filter_criteria))
     source = __get_source(source_id)
-    entries = source.get_filter_content(filter_criteria)
-    return __add_items(entries, callback='show_movies_filtered',
-                       callback_args=['source_id', 'filter_criteria',
-                                      'filter_content'])
+    items = [{'label': i['title'],
+              'url': plugin.url_for('show_movies',
+                                    source_id=source_id,
+                                    filter_criteria=filter_criteria,
+                                    filter_content=i['id'])}
+             for i in source.get_filter_content(filter_criteria)]
+    return plugin.add_items(items)
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/<filter_content>/')
-def show_movies_filtered(source_id, filter_criteria='', filter_content=''):
-    __log(('show_movies_filtered started with source_id=%s '
+def show_movies(source_id, filter_criteria, filter_content):
+    __log(('show_movies started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
           % (source_id, filter_criteria, filter_content))
     source = __get_source(source_id)
-    quality_code = int(plugin.get_setting('trailer_quality'))
-    if filter_criteria and filter_content:
-        entries = source.get_movies(quality_code=quality_code,
-                                    filters={filter_criteria: filter_content})
+    if filter_criteria != 'all' and filter_content != 'all':
+        items = source.get_movies(filters={filter_criteria: filter_content})
     else:
-        entries = source.get_movies(quality_code=quality_code)
-    if plugin.get_setting('trailer_choosing') == '0':
-        __log('show_movies trailer_choosing')
-        return __add_items(entries, callback='show_trailer_types',
-                           callback_args=['source_id', 'movie_id'])
-    elif plugin.get_setting('trailer_choosing') == '1':
-        __log('show_movies direct playback')
-        return __add_items(entries)
+        items = source.get_movies()
+    return __add_items(source_id, items)
 
 
-@plugin.route('/<source_id>/trailer/<movie_id>/')
-def show_trailer_types(source_id, movie_id):
-    __log('show_trailer_types started with source_id=%s movie_id=%s'
-          % (source_id, movie_id))
+@plugin.route('/<source_id>/trailer/<movie_title>/')
+def show_trailer_types(source_id, movie_title):
+    __log('show_trailer_types started with source_id=%s movie_title=%s'
+          % (source_id, movie_title))
     source = __get_source(source_id)
-    types = source.get_trailer_type(movie_id)
-    return __add_items(types, callback='show_trailer',
-                       callback_args=['source_id', 'trailer_type', 'movie_id'])
+    ask_quality = plugin.get_setting('ask_quality') == 'false'
+    if ask_quality:
+        q_id = int(plugin.get_setting('trailer_quality'))
+        trailer_quality = source.get_trailer_qualities()[q_id]['title']
+        items = [{'label': i['title'],
+                  'is_playable': True,
+                  'is_folder': False,
+                  'url': plugin.url_for('play_trailer',
+                                        source_id=source_id,
+                                        movie_title=movie_title,
+                                        trailer_type=i['id'],
+                                        trailer_quality=trailer_quality)}
+                 for i in source.get_trailer_types(movie_title)]
+    else:
+        items = [{'label': i['title'],
+                  'url': plugin.url_for('show_trailer_qualities',
+                                        source_id=source_id,
+                                        movie_title=movie_title,
+                                        trailer_type=i['id'])}
+                 for i in source.get_trailer_types(movie_title)]
+    return plugin.add_items(items)
 
 
-@plugin.route('/<source_id>/trailer/<movie_id>/<trailer_type>/')
-def show_trailer(source_id, movie_id, trailer_type):
-    __log('show_trailer started with source_id=%s trailer_type=%s movie_id=%s'
-          % (source_id, trailer_type, movie_id))
+@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/')
+def show_trailer_qualities(source_id, movie_title, trailer_type):
+    __log(('show_trailer_qualities started with '
+           'source_id=%s movie_title=%s trailer_type=%s')
+          % (source_id, movie_title, trailer_type))
     source = __get_source(source_id)
-    trailers = source.get_trailers(movie_id, trailer_type)
-    return __add_items(trailers)
+    items = [{'label': i['title'],
+              'is_playable': True,
+              'is_folder': False,
+              'url': plugin.url_for('play_trailer',
+                                    source_id=source_id,
+                                    movie_title=movie_title,
+                                    trailer_type=trailer_type,
+                                    trailer_quality=i['title'])}
+             for i in source.get_trailer_qualities(movie_title)]
+    return plugin.add_items(items)
 
 
-def __add_items(entries, callback=None, callback_args=[]):
+@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/<trailer_quality>')
+def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
+    __log(('play_trailer started with source_id=%s movie_title=%s '
+           'trailer_type=%s trailer_quality=%s')
+           % (source_id, movie_title, trailer_type, trailer_quality))
+    source = __get_source(source_id)
+    trailer_url = source.get_trailer(movie_title, trailer_type,
+                                     trailer_quality)
+    return plugin.set_resolved_url(trailer_url)
+
+
+def __add_items(source_id, entries):
+    __log('__add_items start')
     items = []
     force_viewmode = plugin.get_setting('force_viewmode') == 'true'
-    has_icons = False
+    context_menu = []
+    for fc in __get_source(source_id).get_filter_criteria():
+        context_menu.append((_(fc['title']),
+                             'XBMC.Container.Update(%s)'
+                             % plugin.url_for('show_filter_content',
+                                              source_id=source_id,
+                                              filter_criteria=fc['id'])))
     for e in entries:
-        if force_viewmode and not has_icons and e.get('thumb', False):
-            has_icons = True
-        if callback and callback_args:
-            callback_kwargs = {}
-            for k in callback_args:
-                callback_kwargs[k] = e[k]
-            url = plugin.url_for(callback, **callback_kwargs)
-            is_folder = True
-            is_playable = False
-            e['title'] = _(e['title'])
-        else:
-            url = e['url']
-            is_folder = False
-            is_playable = True
         items.append({'label': e['title'],
                       'iconImage': e.get('thumb', 'DefaultVideo.png'),
+                      'context_menu': context_menu,
                       'info': {'title': e.get('title'),
                                'duration': e.get('duration', '0:00'),
                                'size': int(e.get('size', 0)),
@@ -194,22 +216,23 @@ def __add_items(entries, callback=None, callback_args=[]):
                                'year': int(e.get('year', 0)),
                                'rating': float(e.get('rating', 0.0)),
                                'director': e.get('director', '')},
-                      'url': url,
-                      'is_playable': is_playable,
-                      'is_folder': is_folder})
+                      'url': plugin.url_for('show_trailer_types',
+                                            source_id=source_id,
+                                            movie_title=e['title'])})
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,
                     xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
     __log('__add_items end')
     return plugin.add_items(items, sort_method_ids=sort_methods,
-                            override_view_mode=has_icons)
+                            override_view_mode=force_viewmode)
 
 
 def __get_source(source_id):
     if source_id == 'apple':
         __log('__get_source using: %s' % source_id)
-        return apple_trailers
+        source = apple_trailers.AppleTrailers()
+        return source
     else:
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
 

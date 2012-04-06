@@ -2,15 +2,14 @@
 <strings>
     <!-- General entries -->
     <string id="30000">All trailer</string>
-    <string id="30001">Browse by Year</string>
-    <string id="30002">Browse by Studio</string>
-    <string id="30003">Browse by Cast</string>
-    <string id="30004">Browse by Genre</string>
+    <string id="30001">Browse movies by year</string>
+    <string id="30002">Browse movies by studio</string>
+    <string id="30003">Browse movies by cast</string>
+    <string id="30004">Browse movies by genre</string>
     <!-- Settings -->
-    <string id="30010">Trailer choosing for movie</string>
-    <string id="30011">Ask me which trailer to play</string>
-    <string id="30012">Just playback most recent trailer</string>
-    <string id="30030">Prefered Trailer Quality</string>
+    <string id="30010">Ask for trailer quality</string>
+    <string id="30011">fixme: Ask for trailer type (Trailer, Teaser, Clip)</string>
+    <string id="30030">Trailer quality</string>
     <string id="30031">iPod</string>
     <string id="30032">Small</string>
     <string id="30033">Medium</string>

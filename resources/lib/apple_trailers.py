@@ -20,178 +20,173 @@ from BeautifulSoup import BeautifulStoneSoup as BS
 from urllib import unquote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
 
-UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
-MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
-MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
+class AppleTrailers(object):
 
-QUALITIES = ('i320.m4v', 'h320.mov', 'h480.mov', 'h640w.mov',
-             'h480p.mov', 'h720p.mov', 'h1080p.mov')
+    SOURCE_ID = 'apple'
 
-SOURCE_ID = 'apple'
+    MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
+    MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
 
-FILTER_CRITERIA = [{'title': 'all',
-                    'source_id': SOURCE_ID,
-                    'filter_criteria': 'all'},
-                   {'title': 'year',
-                    'source_id': SOURCE_ID,
-                    'filter_criteria': 'year'},
-                   {'title': 'studio',
-                    'source_id': SOURCE_ID,
-                    'filter_criteria': 'studio'},
-                   {'title': 'cast',
-                    'source_id': SOURCE_ID,
-                    'filter_criteria': 'cast'},
-                   {'title': 'genre',
-                    'source_id': SOURCE_ID,
-                    'filter_criteria': 'genre'}, ]
+    TRAILER_QUALITIES = [{'title': 'iPod',
+                          'id': 'i320.m4v'},
+                         {'title': 'Small',
+                          'id': 'h320.mov'},
+                         {'title': 'Medium',
+                          'id': 'h480.mov'},
+                         {'title': 'Large',
+                          'id': 'h640w.mov'},
+                         {'title': 'HD480p',
+                          'id': 'h480p.mov'},
+                         {'title': 'HD720p',
+                          'id': 'h720p.mov'},
+                         {'title': 'HD1080p',
+                          'id': 'h1080p.mov'}, ]
 
+    FILTER_CRITERIA = [{'title': 'year',
+                        'id': 'year'},
+                       {'title': 'studio',
+                        'id': 'studio'},
+                       {'title': 'cast',
+                        'id': 'cast'},
+                       {'title': 'genre',
+                        'id': 'genre'}, ]
 
-def get_filter_criteria():
-    __log('get_filter_criteria')
-    return FILTER_CRITERIA
+    UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
+    def __init__(self):
+        self.movies = self.__get_movies()
 
-def get_movies(filters={}, quality_code=None):
-    __log('get_movies started with filters: %s' % filters)
-    url = MAIN_URL
-    r_movie_string = re.compile('/trailers/(.+?)/images/')
-    tree = __get_tree(url)
-    movies = []
-    for m in tree.findAll('movieinfo'):
-        movie = {'movie_id': m.get('id'),
-                 'source_id': SOURCE_ID,
-                 'title': m.title.string,
-                 'duration': m.runtime.string,
-                 'mpaa': m.rating.string,
-                 'studio': m.studio.string,
-                 'post_date': __format_date(m.postdate.string),
-                 'release_date': __format_date(m.releasedate.string),
-                 'year': __format_year(m.releasedate.string),
-                 'copyright': m.copyright.string,
-                 'director': m.director.string,
-                 'plot': m.description.string,
-                 'thumb': m.poster.xlarge.string, }
-        if m.genre:
-            movie['genre'] = [g.string.strip() for g in m.genre.contents]
-        if m.cast:
-            movie['cast'] = [c.string.strip() for c in m.cast.contents]
-        movie['url'] = '%s?|User-Agent=%s' % (m.preview.large.string, UA)
-        if quality_code:
-            prefix = QUALITIES[quality_code]
-            movie['url'] = movie['url'].replace('h640w.mov', prefix)
-        movie['movie_string'] = re.search(r_movie_string,
-                                          m.poster.location.string).group(1)
-        movie['size'] = m.preview.large['filesize']
+    def get_movies(self, filters={}):
         if filters:
-            match = True
-            for field, content in filters.items():
-                match = match and content in movie.get(field)
-            if not match:
-                continue
-        movies.append(movie)
-    __log('get_movies finished with %d elements' % len(movies))
-    return movies
+            filtered_movies = []
+            for m in self.movies:
+                match = True
+                for field, content in filters.items():
+                    match = match and content in m.get(field)
+                if match:
+                    filtered_movies.append(m)
+            return filtered_movies
+        else:
+            return self.movies
 
+    def get_filter_criteria(self):
+        self.__log('get_filter_criteria')
+        return self.FILTER_CRITERIA
 
-def get_trailer_type(movie_id):
-    __log('get_trailer_type started with movie_id: %s' % movie_id)
-    f = {'movie_id': movie_id}
-    movies = get_movies(filters=f)
-    if not movies:
-        raise Exception
-    movie_string = movies[0]['movie_string']
-    url = MOVIE_URL % movie_string
-    tree = __get_tree(url)
-    r_type = re.compile('/moviesxml/s/.+?/.+?/(.+?).xml')
-    trailer_types = []
-    for t in tree.findAll('gotourl', {'target': 'main'}):
-        if t.find('b'):
-            type_string = re.search(r_type, t['url']).group(1)
-            trailer_types.append({'title': t['draggingname'],
-                                  'source_id': SOURCE_ID,
-                                  'movie_id': movie_id,
-                                  'trailer_type': type_string})
-    return trailer_types
+    def get_filter_content(self, criteria):
+        self.__log('get_filter_content started with criteria: %s' % criteria)
+        assert criteria in self.FILTER_CRITERIA
+        items = [{'title': content,
+                  'id': content}
+                 for content in self.__filter(self.movies, criteria)]
+        return items
 
+    def get_trailer_types(self, movie_title):
+        self.__log('get_trailer_types started with movie_title: %s'
+                   % movie_title)
+        f = {'title': movie_title}
+        movie = self.get_movies(filters=f)[0]
+        url = self.MOVIE_URL % movie['movie_string']
+        tree = self.__get_tree(url)
+        r_type = re.compile('/moviesxml/s/.+?/.+?/(.+?).xml')
+        trailer_types = []
+        for t in tree.findAll('gotourl', {'target': 'main'}):
+            if t.find('b'):
+                type_string = re.search(r_type, t['url']).group(1)
+                trailer_types.append({'title': t['draggingname'],
+                                      'id': type_string})
+        return trailer_types
 
-def get_trailers(movie_id, trailer_type='index'):
-    __log('get_trailers started with movie_id: %s trailer_type: %s '
-          % (movie_id, trailer_type))
-    f = {'movie_id': movie_id}
-    movies = get_movies(filters=f)
-    if not movies:
-        raise Exception
-    movie_string = movies[0]['movie_string']
-    url = (MOVIE_URL % movie_string).replace('index', trailer_type)
-    html = __get_url(url)
-    r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
-    section = re.search(r_section, html).group(1)
-    tree = BS(section, convertEntities=BS.XML_ENTITIES)
-    trailers = []
-    for s in tree.findAll('dict'):
-        title = url = None
-        for k in s.findAll('key'):
-            if k.string == 'songName':
-                title = k.nextSibling.string
-            elif k.string == 'previewURL':
-                url = k.nextSibling.string
-            if title and url:
-                trailers.append({'title': title,
-                                 'source_id': SOURCE_ID,
-                                 'movie_id': movie_id,
-                                 'url': ('%s?|User-Agent=%s' % (url, UA)), })
-                break
-    return trailers
+    def get_trailer_qualities(self, movie_title=''):
+        self.__log('get_trailer_qualities started with movie_title: %s'
+                   % movie_title)
+        return self.TRAILER_QUALITIES
 
+    def get_trailer(self, movie_title, trailer_type='', trailer_quality=''):
+        self.__log(('get_trailers started with movie_title: %s '
+                    'trailer_type: %s trailer_quality: %s')
+                    % (movie_title, trailer_type, trailer_quality))
+        f = {'title': movie_title}
+        movie = self.get_movies(filters=f)[0]
+        url = self.MOVIE_URL % movie['movie_string']
+        if trailer_type:
+            url = url.replace('index', trailer_type)
+        html = self.__get_url(url)
+        r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
+        section = re.search(r_section, html).group(1)
+        tree = BS(section, convertEntities=BS.XML_ENTITIES)
+        trailers = []
+        quality_id = [q['id'] for q in self.TRAILER_QUALITIES
+                      if q['title'] == trailer_quality][0]
+        for s in tree.findAll('dict'):
+            for k in s.findAll('key'):
+                if k.string == 'previewURL':
+                    url = k.nextSibling.string
+                    if quality_id in url:
+                        return ('%s?|User-Agent=%s' % (url, self.UA))
 
-def get_filter_content(criteria):
-    __log('get_filter_content started with criteria: %s' % criteria)
-    assert criteria in FILTER_CRITERIA
-    movies = get_movies()
-    items = [{'title': f,
-              'source_id': SOURCE_ID,
-              'filter_criteria': criteria,
-              'filter_content': f} for f in  __filter(movies, criteria)]
-    return items
+    def __get_movies(self):
+        self.__log('__get_movies started')
+        url = self.MAIN_URL
+        r_movie_string = re.compile('/trailers/(.+?)/images/')
+        tree = self.__get_tree(url)
+        movies = []
+        for m in tree.findAll('movieinfo'):
+            movie = {'movie_id': m.get('id'),
+                     'title': m.title.string,
+                     'duration': m.runtime.string,
+                     'mpaa': m.rating.string,
+                     'studio': m.studio.string,
+                     'post_date': self.__format_date(m.postdate.string),
+                     'release_date': self.__format_date(m.releasedate.string),
+                     'year': self.__format_year(m.releasedate.string),
+                     'copyright': m.copyright.string,
+                     'director': m.director.string,
+                     'plot': m.description.string,
+                     'thumb': m.poster.xlarge.string, }
+            if m.genre:
+                movie['genre'] = [g.string.strip() for g in m.genre.contents]
+            if m.cast:
+                movie['cast'] = [c.string.strip() for c in m.cast.contents]
+            movie_string = re.search(r_movie_string,
+                                     m.poster.location.string).group(1)
+            movie['movie_string'] = movie_string
+            movies.append(movie)
+        self.__log('get_movies finished with %d elements' % len(movies))
+        return movies
 
+    def __format_date(self, date_str):
+        y, m, d = date_str.split('-')
+        return '.'.join((d, m, y, ))
 
-def __format_date(date_str):
-    y, m, d = date_str.split('-')
-    return '.'.join((d, m, y, ))
+    def __format_year(self, date_str):
+        return date_str.split('-', 1)[0]
 
+    def __filter(self, ld, f):
+        ll = [d[f] for d in ld if d.get(f)]
+        if isinstance(ll[0], list):
+            s = set([i for ll in ll for i in ll])
+        else:
+            s = set(ll)
+        return sorted(s)
 
-def __format_year(date_str):
-    return date_str.split('-', 1)[0]
+    def __get_tree(self, url, referer=None):
+        html = self.__get_url(url, referer)
+        tree = BS(html, convertEntities=BS.XML_ENTITIES)
+        return tree
 
+    def __get_url(self, url, referer=None):
+        self.__log('__get_url opening url: %s' % url)
+        req = Request(url)
+        if referer:
+            req.add_header('Referer', referer)
+        req.add_header('Accept', ('text/html,application/xhtml+xml,'
+                                  'application/xml;q=0.9,*/*;q=0.8'))
+        req.add_header('User-Agent', self.UA)
+        html = urlopen(req).read()
+        self.__log('__get_url got %d bytes' % len(html))
+        return html
 
-def __filter(ld, f):
-    ll = [d[f] for d in ld if d.get(f)]
-    if isinstance(ll[0], list):
-        s = set([i for ll in ll for i in ll])
-    else:
-        s = set(ll)
-    return sorted(s)
-
-
-def __get_tree(url, referer=None):
-    html = __get_url(url, referer)
-    tree = BS(html, convertEntities=BS.XML_ENTITIES)
-    return tree
-
-
-def __get_url(url, referer=None):
-    __log('__get_url opening url: %s' % url)
-    req = Request(url)
-    if referer:
-        req.add_header('Referer', referer)
-    req.add_header('Accept', ('text/html,application/xhtml+xml,'
-                              'application/xml;q=0.9,*/*;q=0.8'))
-    req.add_header('User-Agent', UA)
-    html = urlopen(req).read()
-    __log('__get_url got %d bytes' % len(html))
-    return html
-
-
-def __log(msg):
-    print('Apple scraper: %s' % msg)
+    def __log(self, msg):
+        print('Apple scraper: %s' % msg)
