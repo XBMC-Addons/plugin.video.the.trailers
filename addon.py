@@ -80,7 +80,7 @@ class Plugin_mod(Plugin):
         if options.get('is_playable'):
             li.setProperty('IsPlayable', 'true')
         if options.get('context_menu'):
-            li.addContextMenuItems(options['context_menu'])
+            li.addContextMenuItems(options['context_menu'], replaceItems=True)
         return options['url'], li, options.get('is_folder', True)
 
 plugin = Plugin_mod(__addon_name__, __id__, __file__)
@@ -101,7 +101,7 @@ def show_all_movies(source_id):
     __log('show_all_movies started with source_id=%s' % source_id)
     source = __get_source(source_id)
     items = source.get_movies()
-    return __add_items(source_id, items)
+    return __add_movies(source_id, items)
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/')
@@ -110,7 +110,7 @@ def show_filter_content(source_id, filter_criteria):
           % (source_id, filter_criteria))
     source = __get_source(source_id)
     items = [{'label': i['title'],
-              'url': plugin.url_for('show_movies',
+              'url': plugin.url_for('show_filtered_movies',
                                     source_id=source_id,
                                     filter_criteria=filter_criteria,
                                     filter_content=i['id'])}
@@ -119,8 +119,8 @@ def show_filter_content(source_id, filter_criteria):
 
 
 @plugin.route('/<source_id>/movies/<filter_criteria>/<filter_content>/')
-def show_movies(source_id, filter_criteria, filter_content):
-    __log(('show_movies started with source_id=%s '
+def show_filtered_movies(source_id, filter_criteria, filter_content):
+    __log(('show_filtered_movies started with source_id=%s '
            'filter_criteria=%s filter_content=%s')
           % (source_id, filter_criteria, filter_content))
     source = __get_source(source_id)
@@ -128,7 +128,7 @@ def show_movies(source_id, filter_criteria, filter_content):
         items = source.get_movies(filters={filter_criteria: filter_content})
     else:
         items = source.get_movies()
-    return __add_items(source_id, items)
+    return __add_movies(source_id, items)
 
 
 @plugin.route('/<source_id>/trailer/<movie_title>/')
@@ -196,8 +196,8 @@ def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
     return plugin.set_resolved_url(trailer_url)
 
 
-def __add_items(source_id, entries):
-    __log('__add_items start')
+def __add_movies(source_id, entries):
+    __log('__add_movies start')
     items = []
     force_viewmode = plugin.get_setting('force_viewmode') == 'true'
     context_menu = []
@@ -236,7 +236,7 @@ def __add_items(source_id, entries):
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,
                     xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
-    __log('__add_items end')
+    __log('__add_movies end')
     return plugin.add_items(items, sort_method_ids=sort_methods,
                             override_view_mode=force_viewmode)
 
