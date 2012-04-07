@@ -224,27 +224,14 @@ def __add_movies(source_id, entries):
     is_playable = (plugin.get_setting('ask_quality') == 'false' and
                    plugin.get_setting('ask_trailer') == 'false')
     for e in entries:
-        items.append({'label': e['title'],
-                      'iconImage': e.get('thumb', 'DefaultVideo.png'),
-                      'context_menu': context_menu,
-                      'is_folder': not is_playable,
-                      'is_playable': is_playable,
-                      'info': {'title': e.get('title'),
-                               'duration': e.get('duration', '0:00'),
-                               'size': int(e.get('size', 0)),
-                               'mpaa': e.get('mpaa', ''),
-                               'plot': e.get('plot', ''),
-                               'cast': e.get('cast', []),
-                               'genre': ', '.join(e.get('genre', [])),
-                               'studio': e.get('studio', ''),
-                               'date': e.get('post_date', ''),
-                               'premiered': e.get('release_date', ''),
-                               'year': int(e.get('year', 0)),
-                               'rating': float(e.get('rating', 0.0)),
-                               'director': e.get('director', '')},
-                      'url': plugin.url_for('show_trailer_types',
-                                            source_id=source_id,
-                                            movie_title=e['title'])})
+        movie = __format_movie(e)
+        movie['context_menu'] = context_menu
+        movie['is_folder'] = not is_playable
+        movie['is_playable'] = is_playable
+        movie['url'] = plugin.url_for('show_trailer_types',
+                                      source_id=source_id,
+                                      movie_title=movie['label'])
+        items.append(movie)
     sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,
@@ -253,6 +240,26 @@ def __add_movies(source_id, entries):
     __log('__add_movies end')
     return plugin.add_items(items, sort_method_ids=sort_methods,
                             override_view_mode=force_viewmode)
+
+
+def __format_movie(m):
+    return {'label': m['title'],
+            'iconImage': m.get('thumb', 'DefaultVideo.png'),
+            'info': {'title': m.get('title'),
+                     'duration': m.get('duration', '0:00'),
+                     'size': int(m.get('size', 0)),
+                     'mpaa': m.get('mpaa', ''),
+                     'plot': m.get('plot', ''),
+                     'cast': m.get('cast', []),
+                     'genre': ', '.join(m.get('genre', [])),
+                     'studio': m.get('studio', ''),
+                     'date': m.get('post_date', ''),
+                     'premiered': m.get('release_date', ''),
+                     'year': int(m.get('year', 0)),
+                     'rating': float(m.get('rating', 0.0)),
+                     'director': m.get('director', ''),
+                    },
+           }
 
 
 def __get_source(source_id):
