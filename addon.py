@@ -168,6 +168,7 @@ def show_trailer_qualities(source_id, movie_title, trailer_type):
     __log(('show_trailer_qualities started with '
            'source_id=%s movie_title=%s trailer_type=%s')
           % (source_id, movie_title, trailer_type))
+    source = __get_source(source_id)
     if not plugin.get_setting('ask_quality') == 'true':
         __log('show_trailer_qualities redirecting to play_trailer')
         q_id = int(plugin.get_setting('trailer_quality'))
@@ -179,7 +180,6 @@ def show_trailer_qualities(source_id, movie_title, trailer_type):
                              trailer_quality=trailer_quality)
         return plugin.redirect(url)
     else:
-        source = __get_source(source_id)
         items = [{'label': i['title'],
                   'is_playable': True,
                   'is_folder': False,
