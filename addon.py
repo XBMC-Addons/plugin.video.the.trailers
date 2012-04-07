@@ -38,11 +38,12 @@ THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
 SOURCES = [{'title': 'Apple Movie Trailers',
             'id': 'apple'}, ]
 
-STRINGS = {'all': 30000,
+STRINGS = {'show_movie_info': 30000,
            'year': 30001,
            'studio': 30002,
            'cast': 30003,
-           'genre': 30004}
+           'genre': 30004,
+           'open_settings': 30005}
 
 
 class Plugin_mod(Plugin):
@@ -196,11 +197,18 @@ def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
     return plugin.set_resolved_url(trailer_url)
 
 
+@plugin.route('/settings/')
+def open_settings():
+    __log('open_settings started')
+    plugin.open_settings()
+
+
 def __add_movies(source_id, entries):
     __log('__add_movies start')
     items = []
-    force_viewmode = plugin.get_setting('force_viewmode') == 'true'
-    context_menu = []
+    context_menu = [(_('show_movie_info'), 'XBMC.Action(Info)'),
+                    (_('open_settings'), 'XBMC.Container.Update(%s)'
+                                         % plugin.url_for('open_settings'))]
     for fc in __get_source(source_id).get_filter_criteria():
         context_menu.append((_(fc['title']),
                              'XBMC.Container.Update(%s)'
@@ -209,7 +217,6 @@ def __add_movies(source_id, entries):
                                               filter_criteria=fc['id'])))
     is_playable = (plugin.get_setting('ask_quality') == 'false' and
                    plugin.get_setting('ask_trailer') == 'false')
-    print 'is playable: %s' % is_playable
     for e in entries:
         items.append({'label': e['title'],
                       'iconImage': e.get('thumb', 'DefaultVideo.png'),
@@ -236,6 +243,7 @@ def __add_movies(source_id, entries):
                     xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
                     xbmcplugin.SORT_METHOD_DATE,
                     xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
+    force_viewmode = plugin.get_setting('force_viewmode') == 'true'
     __log('__add_movies end')
     return plugin.add_items(items, sort_method_ids=sort_methods,
                             override_view_mode=force_viewmode)

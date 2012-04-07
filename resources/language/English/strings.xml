@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <!-- General entries -->
-    <string id="30000">All trailer</string>
+    <!-- Context menu entries -->
+    <string id="30000">Show Movie Info</string>
     <string id="30001">Browse movies by year</string>
     <string id="30002">Browse movies by studio</string>
     <string id="30003">Browse movies by cast</string>
     <string id="30004">Browse movies by genre</string>
+    <string id="30005">Add-on settings</string>
     <!-- Settings -->
     <string id="30010">Ask for trailer quality</string>
     <string id="30011">Ask for trailer type (Trailer, Teaser, Clip)</string>
