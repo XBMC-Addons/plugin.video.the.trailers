@@ -135,17 +135,25 @@ def show_movies(source_id, filter_criteria, filter_content):
 def show_trailer_types(source_id, movie_title):
     __log('show_trailer_types started with source_id=%s movie_title=%s'
           % (source_id, movie_title))
-    is_folder = plugin.get_setting('ask_quality') == 'true'
     source = __get_source(source_id)
-    items = [{'label': i['title'],
-              'is_folder': is_folder,
-              'is_playable': not is_folder,
-              'url': plugin.url_for('show_trailer_qualities',
-                                    source_id=source_id,
-                                    movie_title=movie_title,
-                                    trailer_type=i['id'])}
-             for i in source.get_trailer_types(movie_title)]
-    return plugin.add_items(items)
+    if not plugin.get_setting('ask_trailer') == 'true':
+        __log('show_trailer_types redirecting to show_trailer_qualities')
+        url = plugin.url_for('show_trailer_qualities',
+                             source_id=source_id,
+                             movie_title=movie_title,
+                             trailer_type='default')
+        return plugin.redirect(url)
+    else:
+        is_folder = plugin.get_setting('ask_quality') == 'true'
+        items = [{'label': i['title'],
+                  'is_folder': is_folder,
+                  'is_playable': not is_folder,
+                  'url': plugin.url_for('show_trailer_qualities',
+                                        source_id=source_id,
+                                        movie_title=movie_title,
+                                        trailer_type=i['id'])}
+                 for i in source.get_trailer_types(movie_title)]
+        return plugin.add_items(items)
 
 
 @plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/')
@@ -154,9 +162,8 @@ def show_trailer_qualities(source_id, movie_title, trailer_type):
            'source_id=%s movie_title=%s trailer_type=%s')
           % (source_id, movie_title, trailer_type))
     source = __get_source(source_id)
-    ask_quality = plugin.get_setting('ask_quality') == 'true'
-    if not ask_quality:
-        __log('show_trailer_qualities redirecting to play trailer')
+    if not plugin.get_setting('ask_quality') == 'true':
+        __log('show_trailer_qualities redirecting to play_trailer')
         q_id = int(plugin.get_setting('trailer_quality'))
         trailer_quality = source.get_trailer_qualities()[q_id]['title']
         url = plugin.url_for('play_trailer',
@@ -184,8 +191,8 @@ def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
            'trailer_type=%s trailer_quality=%s')
            % (source_id, movie_title, trailer_type, trailer_quality))
     source = __get_source(source_id)
-    trailer_url = source.get_trailer(movie_title, trailer_type,
-                                     trailer_quality)
+    trailer_url = source.get_trailer(movie_title, trailer_quality,
+                                     trailer_type)
     return plugin.set_resolved_url(trailer_url)
 
 
@@ -200,10 +207,15 @@ def __add_items(source_id, entries):
                              % plugin.url_for('show_filter_content',
                                               source_id=source_id,
                                               filter_criteria=fc['id'])))
+    is_playable = (plugin.get_setting('ask_quality') == 'false' and
+                   plugin.get_setting('ask_trailer') == 'false')
+    print 'is playable: %s' % is_playable
     for e in entries:
         items.append({'label': e['title'],
                       'iconImage': e.get('thumb', 'DefaultVideo.png'),
                       'context_menu': context_menu,
+                      'is_folder': not is_playable,
+                      'is_playable': is_playable,
                       'info': {'title': e.get('title'),
                                'duration': e.get('duration', '0:00'),
                                'size': int(e.get('size', 0)),
