@@ -70,6 +70,13 @@ class AppleTrailers(object):
         else:
             return self.movies
 
+    def get_single_movie(self, filters):
+        movies = self.get_movies(filters)
+        if len(movies) == 1:
+            return movies[0]
+        else:
+            raise Exception('Multiple matches in get_single_movie!')
+
     def get_filter_criteria(self):
         self.__log('get_filter_criteria')
         return self.FILTER_CRITERIA
@@ -86,7 +93,7 @@ class AppleTrailers(object):
         self.__log('get_trailer_types started with movie_title: %s'
                    % movie_title)
         f = {'title': movie_title}
-        movie = self.get_movies(filters=f)[0]
+        movie = self.get_single_movie(filters=f)
         url = self.MOVIE_URL % movie['movie_string']
         tree = self.__get_tree(url)
         r_type = re.compile('/moviesxml/s/.+?/.+?/(.+?).xml')
@@ -108,7 +115,7 @@ class AppleTrailers(object):
                     'trailer_type: %s trailer_quality: %s')
                     % (movie_title, trailer_type, trailer_quality))
         f = {'title': movie_title}
-        movie = self.get_movies(filters=f)[0]
+        movie = self.get_single_movie(filters=f)
         url = self.MOVIE_URL % movie['movie_string']
         if trailer_type != 'default':
             url = url.replace('index', trailer_type)
