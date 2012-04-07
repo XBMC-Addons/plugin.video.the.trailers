@@ -90,11 +90,17 @@ plugin = Plugin_mod(__addon_name__, __id__, __file__)
 @plugin.route('/', default=True)
 def show_sources():
     __log('show_sources')
-    items = [{'label': i['title'],
-              'url': plugin.url_for('show_all_movies',
-                                    source_id=i['id'])}
-             for i in SOURCES]
-    return plugin.add_items(items)
+    if len(SOURCES) == 1:
+        __log('show_sources redirecting to show_all_movies')
+        url = plugin.url_for('show_all_movies',
+                             source_id=SOURCES[0]['id'])
+        return plugin.redirect(url)
+    else:
+        items = [{'label': i['title'],
+                  'url': plugin.url_for('show_all_movies',
+                                        source_id=i['id'])}
+                 for i in SOURCES]
+        return plugin.add_items(items)
 
 
 @plugin.route('/<source_id>/movies/')
