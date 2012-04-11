@@ -164,11 +164,18 @@ class AppleTrailers(object):
         return movies
 
     def __format_date(self, date_str):
-        y, m, d = date_str.split('-')
-        return '.'.join((d, m, y, ))
+        if date_str:
+            y, m, d = date_str.split('-')
+            return '.'.join((d, m, y, ))
+        else:
+            return ''
+        
 
     def __format_year(self, date_str):
-        return date_str.split('-', 1)[0]
+        if date_str:
+            return date_str.split('-', 1)[0]
+        else:
+            return 0
 
     def __filter(self, ld, f):
         ll = [d[f] for d in ld if d.get(f)]
