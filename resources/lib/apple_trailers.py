@@ -15,7 +15,9 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 import re
+import time
 from BeautifulSoup import BeautifulStoneSoup as BS
 from urllib import unquote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
@@ -54,7 +56,10 @@ class AppleTrailers(object):
 
     UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
-    def __init__(self):
+    def __init__(self, cache_path):
+        self.cache_path = cache_path
+        if not os.path.isdir(self.cache_path):
+            os.makedirs(self.cache_path)
         self.movies = self.__get_movies()
 
     def get_movies(self, filters={}):
@@ -95,7 +100,8 @@ class AppleTrailers(object):
         f = {'title': movie_title}
         movie = self.get_single_movie(filters=f)
         url = self.MOVIE_URL % movie['movie_string']
-        tree = self.__get_tree(url)
+        cache_filename = '%s.xml' % movie['movie_string'].split('/')[1]
+        tree = self.__get_tree(url, cache_filename=cache_filename)
         r_type = re.compile('/moviesxml/s/.+?/.+?/(.+?).xml')
         trailer_types = []
         for t in tree.findAll('gotourl', {'target': 'main'}):
@@ -169,7 +175,6 @@ class AppleTrailers(object):
             return '.'.join((d, m, y, ))
         else:
             return ''
-        
 
     def __format_year(self, date_str):
         if date_str:
@@ -185,20 +190,31 @@ class AppleTrailers(object):
             s = set(ll)
         return sorted(s)
 
-    def __get_tree(self, url, referer=None):
-        html = self.__get_url(url, referer)
+    def __get_tree(self, url, referer=None, cache_filename=None):
+        html = self.__get_url(url, referer, cache_filename)
         tree = BS(html, convertEntities=BS.XML_ENTITIES)
         return tree
 
-    def __get_url(self, url, referer=None):
-        self.__log('__get_url opening url: %s' % url)
-        req = Request(url)
-        if referer:
-            req.add_header('Referer', referer)
-        req.add_header('Accept', ('text/html,application/xhtml+xml,'
-                                  'application/xml;q=0.9,*/*;q=0.8'))
-        req.add_header('User-Agent', self.UA)
-        html = urlopen(req).read()
+    def __get_url(self, url, referer=None, cache_filename=None):
+        filename = cache_filename or url.rsplit('/')[-1]
+        cache_file = os.path.join(self.cache_path, filename)
+        try:
+            cache_file_date = os.path.getmtime(cache_file)
+        except:
+            cache_file_date = 0
+        if time.time() - 3600 > cache_file_date:
+            self.__log('__get_url opening url: %s' % url)
+            req = Request(url)
+            if referer:
+                req.add_header('Referer', referer)
+            req.add_header('Accept', ('text/html,application/xhtml+xml,'
+                                      'application/xml;q=0.9,*/*;q=0.8'))
+            req.add_header('User-Agent', self.UA)
+            html = urlopen(req).read()
+            open(cache_file, 'w').write(html)
+        else:
+            self.__log('__get_url using cachefile: %s' % cache_file)
+            html = open(cache_file, 'r').read()
         self.__log('__get_url got %d bytes' % len(html))
         return html
 

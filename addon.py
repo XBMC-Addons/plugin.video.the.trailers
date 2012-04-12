@@ -263,9 +263,10 @@ def __format_movie(m):
 
 
 def __get_source(source_id):
+    cache_path = xbmc.translatePath(plugin._plugin.getAddonInfo('profile'))
     if source_id == 'apple':
         __log('__get_source using: %s' % source_id)
-        source = apple_trailers.AppleTrailers()
+        source = apple_trailers.AppleTrailers(cache_path)
         return source
     else:
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
