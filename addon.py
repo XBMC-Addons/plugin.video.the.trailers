@@ -149,7 +149,7 @@ def show_trailer_types(source_id, movie_title):
         url = plugin.url_for('show_trailer_qualities',
                              source_id=source_id,
                              movie_title=movie_title,
-                             trailer_type='default')
+                             trailer_type='trailer')
         return plugin.redirect(url)
     else:
         source = __get_source(source_id)
@@ -258,7 +258,7 @@ def __add_movies(source_id, entries):
         movie = __format_movie(e)
         movie['context_menu'] = context_menu + __download_cm_entry(source_id,
                                                                    e['title'],
-                                                                   'default')
+                                                                   'trailer')
         movie['is_folder'] = not is_playable
         movie['is_playable'] = is_playable
         movie['url'] = plugin.url_for('show_trailer_types',

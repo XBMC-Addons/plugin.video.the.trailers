@@ -116,14 +116,14 @@ class AppleTrailers(object):
                    % movie_title)
         return self.TRAILER_QUALITIES
 
-    def get_trailer(self, movie_title, trailer_quality, trailer_type='default'):
+    def get_trailer(self, movie_title, trailer_quality, trailer_type='trailer'):
         self.__log(('get_trailers started with movie_title: %s '
                     'trailer_type: %s trailer_quality: %s')
                     % (movie_title, trailer_type, trailer_quality))
         f = {'title': movie_title}
         movie = self.get_single_movie(filters=f)
         url = self.MOVIE_URL % movie['movie_string']
-        if trailer_type != 'default':
+        if trailer_type != 'trailer':
             url = url.replace('index', trailer_type)
         html = self.__get_url(url)
         r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
