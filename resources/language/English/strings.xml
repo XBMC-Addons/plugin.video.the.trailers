@@ -7,10 +7,11 @@
     <string id="30003">Browse movies by cast</string>
     <string id="30004">Browse movies by genre</string>
     <string id="30005">Add-on settings</string>
+    <string id="30006">Download Trailer</string>
     <!-- Settings -->
     <string id="30010">Ask for trailer quality</string>
     <string id="30011">Ask for trailer type (Trailer, Teaser, Clip)</string>
-    <string id="30030">Trailer quality</string>
+    <string id="30030">Trailer quality (play)</string>
     <string id="30031">iPod</string>
     <string id="30032">Small</string>
     <string id="30033">Medium</string>
@@ -18,5 +19,7 @@
     <string id="30035">HD480p</string>
     <string id="30036">HD720p</string>
     <string id="30037">HD1080p</string>
+    <string id="30040">Trailer quality (download)</string>
+    <string id="30050">Trailer download path</string>
     <string id="30020">Force ViewMode to Thumbnail</string>
 </strings>

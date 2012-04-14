@@ -19,6 +19,7 @@
 
 from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict
 import resources.lib.apple_trailers as apple_trailers
+import SimpleDownloader
 
 __addon_name__ = 'The Trailers'
 __id__ = 'plugin.video.the.trailers'
@@ -43,7 +44,8 @@ STRINGS = {'show_movie_info': 30000,
            'studio': 30002,
            'cast': 30003,
            'genre': 30004,
-           'open_settings': 30005}
+           'open_settings': 30005,
+           'download_trailer': 30006}
 
 
 class Plugin_mod(Plugin):
@@ -155,6 +157,8 @@ def show_trailer_types(source_id, movie_title):
         items = [{'label': i['title'],
                   'is_folder': is_folder,
                   'is_playable': not is_folder,
+                  'context_menu': __download_cm_entry(source_id, movie_title,
+                                                      trailer_type=i['id']),
                   'url': plugin.url_for('show_trailer_qualities',
                                         source_id=source_id,
                                         movie_title=movie_title,
@@ -192,7 +196,7 @@ def show_trailer_qualities(source_id, movie_title, trailer_type):
         return plugin.add_items(items)
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/<trailer_quality>')
+@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/<trailer_quality>/play')
 def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
     __log(('play_trailer started with source_id=%s movie_title=%s '
            'trailer_type=%s trailer_quality=%s')
@@ -201,6 +205,33 @@ def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
     return plugin.set_resolved_url(trailer_url)
+
+
+@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/download')
+def download_trailer(source_id, movie_title, trailer_type):
+    __log(('download_trailer started with source_id=%s movie_title=%s '
+           'trailer_type=%s') % (source_id, movie_title, trailer_type))
+    source = __get_source(source_id)
+    q_id = int(plugin.get_setting('trailer_quality_download'))
+    trailer_quality = source.get_trailer_qualities()[q_id]['title']
+    trailer_url = source.get_trailer(movie_title, trailer_quality,
+                                     trailer_type)
+    sd = SimpleDownloader.SimpleDownloader()
+    if not plugin.get_setting('trailer_download_path'):
+        plugin.open_settings()
+    download_path = plugin.get_setting('trailer_download_path')
+    if download_path:
+        if '?|User-Agent=' in trailer_url:
+            trailer_url, useragent = trailer_url.split('?|User-Agent=')
+            # Override User-Agent because SimpleDownloader doesn't support that
+            # native. Downloading from apple requires QT User-Agent
+            sd.common.USERAGENT = useragent
+        filename = '%s-%s-%s.%s' % (movie_title, trailer_type, trailer_quality,
+                                    trailer_url.rsplit('.')[-1])
+        params = {'url': trailer_url,
+                  'download_path': download_path}
+        sd.download(filename, params)
+        __log('start downloading: %s to path: %s' % (filename, download_path))
 
 
 @plugin.route('/settings/')
@@ -225,7 +256,9 @@ def __add_movies(source_id, entries):
                    plugin.get_setting('ask_trailer') == 'false')
     for e in entries:
         movie = __format_movie(e)
-        movie['context_menu'] = context_menu
+        movie['context_menu'] = context_menu + __download_cm_entry(source_id,
+                                                                   e['title'],
+                                                                   'default')
         movie['is_folder'] = not is_playable
         movie['is_playable'] = is_playable
         movie['url'] = plugin.url_for('show_trailer_types',
@@ -270,6 +303,14 @@ def __get_source(source_id):
         return source
     else:
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
+
+
+def __download_cm_entry(source_id, movie_title, trailer_type):
+    return [(_('download_trailer'),
+             'XBMC.RunPlugin(%s)' % plugin.url_for('download_trailer',
+                                                   source_id=source_id,
+                                                   movie_title=movie_title,
+                                                   trailer_type=trailer_type))]
 
 
 def _(s):
