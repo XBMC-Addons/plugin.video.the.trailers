@@ -265,10 +265,8 @@ def __add_movies(source_id, entries):
                                       source_id=source_id,
                                       movie_title=movie['label'])
         items.append(movie)
-    sort_methods = [xbmcplugin.SORT_METHOD_UNSORTED,
-                    xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-                    xbmcplugin.SORT_METHOD_DATE,
-                    xbmcplugin.SORT_METHOD_VIDEO_RUNTIME, ]
+    sort_methods = [xbmcplugin.SORT_METHOD_DATE,
+                    xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
     force_viewmode = plugin.get_setting('force_viewmode') == 'true'
     __log('__add_movies end')
     return plugin.add_items(items, sort_method_ids=sort_methods,
