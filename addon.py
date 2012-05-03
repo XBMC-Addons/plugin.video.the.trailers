@@ -217,7 +217,7 @@ def download_trailer(source_id, movie_title, trailer_type):
            'trailer_type=%s') % (source_id, movie_title, trailer_type))
     source = __get_source(source_id)
     q_id = int(plugin.get_setting('trailer_quality_download'))
-    trailer_quality = source.get_trailer_qualities()[q_id]['title']
+    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['title']
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
     sd = SimpleDownloader.SimpleDownloader()
