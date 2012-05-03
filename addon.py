@@ -18,6 +18,7 @@
 #
 
 from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict
+from resources.lib.exceptions import NetworkError
 import resources.lib.apple_trailers as apple_trailers
 import SimpleDownloader
 
@@ -45,7 +46,10 @@ STRINGS = {'show_movie_info': 30000,
            'cast': 30003,
            'genre': 30004,
            'open_settings': 30005,
-           'download_trailer': 30006}
+           'download_trailer': 30006,
+           'neterror_title': 30100,
+           'neterror_line1': 30101,
+           'neterror_line2': 30102}
 
 
 class Plugin_mod(Plugin):
@@ -324,4 +328,10 @@ def __log(text):
 
 
 if __name__ == '__main__':
-    plugin.run()
+    try:
+        plugin.run()
+    except NetworkError as e:
+        __log('NetworkError: %s' % e)
+        xbmcgui.Dialog().ok(_('neterror_title'),
+                            _('neterror_line1'),
+                            _('neterror_line2'))

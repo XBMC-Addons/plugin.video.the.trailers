@@ -22,4 +22,8 @@
     <string id="30040">Trailer quality (download)</string>
     <string id="30050">Trailer download path</string>
     <string id="30020">Force ViewMode to Thumbnail</string>
+    <!-- Network Error -->
+    <string id="30100">Network Error</string>
+    <string id="30101">Please check your internet connection</string>
+    <string id="30102">and proxy Settings</string>
 </strings>

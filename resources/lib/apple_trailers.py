@@ -21,6 +21,7 @@ import time
 from BeautifulSoup import BeautifulStoneSoup as BS
 from urllib import unquote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
+from exceptions import NetworkError
 
 
 class AppleTrailers(object):
@@ -211,7 +212,12 @@ class AppleTrailers(object):
             req.add_header('Accept', ('text/html,application/xhtml+xml,'
                                       'application/xml;q=0.9,*/*;q=0.8'))
             req.add_header('User-Agent', self.UA)
-            html = urlopen(req).read()
+            try:
+                html = urlopen(req).read()
+            except HTTPError:
+                raise NetworkError(HTTPError)
+            except URLError:
+                raise NetworkError(URLError)
             open(cache_file, 'w').write(html)
         else:
             self.__log('__get_url using cachefile: %s' % cache_file)
