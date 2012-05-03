@@ -147,7 +147,7 @@ class AppleTrailers(object):
         movies = []
         for m in tree.findAll('movieinfo'):
             movie = {'movie_id': m.get('id'),
-                     'title': m.title.string,
+                     'title': m.title.string.replace(u'\u2019', '\''),
                      'duration': m.runtime.string,
                      'mpaa': m.rating.string,
                      'studio': m.studio.string,
