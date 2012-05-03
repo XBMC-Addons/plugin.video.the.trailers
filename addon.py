@@ -176,7 +176,7 @@ def show_trailer_qualities(source_id, movie_title, trailer_type):
     if not plugin.get_setting('ask_quality') == 'true':
         __log('show_trailer_qualities redirecting to play_trailer')
         q_id = int(plugin.get_setting('trailer_quality'))
-        trailer_quality = source.get_trailer_qualities()[q_id]['title']
+        trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['title']
         url = plugin.url_for('play_trailer',
                              source_id=source_id,
                              movie_title=movie_title,

@@ -111,13 +111,13 @@ class AppleTrailers(object):
                                       'id': type_string})
         return trailer_types
 
-    def get_trailer_qualities(self, movie_title=''):
+    def get_trailer_qualities(self, movie_title):
         self.__log('get_trailer_qualities started with movie_title: %s'
                    % movie_title)
         return self.TRAILER_QUALITIES
 
     def get_trailer(self, movie_title, trailer_quality, trailer_type='trailer'):
-        self.__log(('get_trailers started with movie_title: %s '
+        self.__log(('get_trailer started with movie_title: %s '
                     'trailer_type: %s trailer_quality: %s')
                     % (movie_title, trailer_type, trailer_quality))
         f = {'title': movie_title}
@@ -125,7 +125,8 @@ class AppleTrailers(object):
         url = self.MOVIE_URL % movie['movie_string']
         if trailer_type != 'trailer':
             url = url.replace('index', trailer_type)
-        html = self.__get_url(url)
+        cache_filename = '%s.xml' % movie['movie_string'].split('/')[1]
+        html = self.__get_url(url, cache_filename=cache_filename)
         r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
         section = re.search(r_section, html).group(1)
         tree = BS(section, convertEntities=BS.XML_ENTITIES)
