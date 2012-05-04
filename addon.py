@@ -329,6 +329,7 @@ def __log(text):
 
 if __name__ == '__main__':
     try:
+        plugin.set_content('movies')
         plugin.run()
     except NetworkError as e:
         __log('NetworkError: %s' % e)
