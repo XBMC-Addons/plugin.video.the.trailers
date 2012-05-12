@@ -40,7 +40,7 @@ THUMBNAIL_VIEW_IDS = {'skin.confluence': 500,
 
 SOURCES = [{'title': 'Apple Movie Trailers',
             'id': 'apple'}, ]
-    
+
 STRINGS = {'show_movie_info': 30000,
            'open_settings': 30001,
            'browse_by': 30002,
@@ -253,6 +253,19 @@ def download_trailer(source_id, movie_title, trailer_type):
         __log('start downloading: %s to path: %s' % (filename, download_path))
 
 
+@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/download_play')
+def download_play_trailer(source_id, movie_title, trailer_type):
+    __log(('download_play_trailer started with source_id=%s movie_title=%s '
+           'trailer_type=%s') % (source_id, movie_title, trailer_type))
+    return
+
+
+@plugin.route('/add_to_couchpotato/<movie_title>')
+def add_to_couchpotato(movie_title):
+    __log('add_to_couchpotato started with movie_title=%s' % movie_title)
+    return
+
+
 @plugin.route('/settings/')
 def open_settings():
     __log('open_settings started')
@@ -320,8 +333,12 @@ def __movie_cm_entries(source_id, movie_title, trailer_type):
                                   source_id=source_id,
                                   movie_title=movie_title,
                                   trailer_type=trailer_type)
-    download_play_url = ''  # fixme
-    couchpotato_url = ''  # fixme
+    download_play_url = plugin.url_for('download_play_trailer',
+                                       source_id=source_id,
+                                       movie_title=movie_title,
+                                       trailer_type=trailer_type)
+    couchpotato_url = plugin.url_for('add_to_couchpotato',
+                                       movie_title=movie_title)
     cm_entries =  [
         (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
         (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
