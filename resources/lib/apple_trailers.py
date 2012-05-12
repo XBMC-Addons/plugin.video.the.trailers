@@ -46,14 +46,12 @@ class AppleTrailers(object):
                          {'title': 'HD1080p',
                           'id': 'h1080p.mov'}, ]
 
-    FILTER_CRITERIA = [{'title': 'year',
-                        'id': 'year'},
-                       {'title': 'studio',
-                        'id': 'studio'},
-                       {'title': 'cast',
-                        'id': 'cast'},
-                       {'title': 'genre',
-                        'id': 'genre'}, ]
+    FILTER_CRITERIA = [
+#        {'title': 'year',
+#         'id': 'year'},
+        {'title': 'genre',
+         'id': 'genre'}, 
+    ]
 
     UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
 
