@@ -17,6 +17,7 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict
 from resources.lib.exceptions import NetworkError
 import resources.lib.apple_trailers as apple_trailers
@@ -205,6 +206,12 @@ def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
     __log(('play_trailer started with source_id=%s movie_title=%s '
            'trailer_type=%s trailer_quality=%s')
            % (source_id, movie_title, trailer_type, trailer_quality))
+    trailer_id = '|'.join((source_id, movie_title,
+                           trailer_type, trailer_quality))
+    downloaded_trailer = plugin.get_setting(trailer_id)
+    if downloaded_trailer and os.path.isfile(downloaded_trailer):
+        __log('trailer already downloaded, using downloaded version')
+        return plugin.set_resolved_url(downloaded_trailer)
     source = __get_source(source_id)
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
@@ -235,6 +242,10 @@ def download_trailer(source_id, movie_title, trailer_type):
         params = {'url': trailer_url,
                   'download_path': download_path}
         sd.download(filename, params)
+        full_path = os.path.join(download_path, filename)
+        trailer_id = '|'.join((source_id, movie_title,
+                               trailer_type, trailer_quality))
+        plugin.set_setting(trailer_id, full_path)
         __log('start downloading: %s to path: %s' % (filename, download_path))
 
 
