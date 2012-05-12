@@ -237,7 +237,10 @@ def download_trailer(source_id, movie_title, trailer_type):
             # Override User-Agent because SimpleDownloader doesn't support that
             # native. Downloading from apple requires QT User-Agent
             sd.common.USERAGENT = useragent
-        filename = '%s-%s-%s.%s' % (movie_title, trailer_type, trailer_quality,
+        safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
+                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        safe_title = ''.join([c for c in movie_title if c in safe_chars])
+        filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
                                     trailer_url.rsplit('.')[-1])
         params = {'url': trailer_url,
                   'download_path': download_path}
