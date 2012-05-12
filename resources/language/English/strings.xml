@@ -2,12 +2,13 @@
 <strings>
     <!-- Context menu entries -->
     <string id="30000">Show Movie Info</string>
-    <string id="30001">Browse movies by year</string>
-    <string id="30002">Browse movies by studio</string>
-    <string id="30003">Browse movies by cast</string>
-    <string id="30004">Browse movies by genre</string>
-    <string id="30005">Add-on settings</string>
-    <string id="30006">Download Trailer</string>
+    <string id="30001">Add-on settings</string>
+    <string id="30002">Browse by %s</string>
+    <string id="30003">genre</string>
+    <string id="30004">Download</string>
+    <string id="30005">Download + Play</string>
+    <string id="30006">Show Downloads</string>
+    <string id="30007">Add to CouchPotato</string>
     <!-- Settings -->
     <string id="30010">Ask for trailer quality</string>
     <string id="30011">Ask for trailer type (Trailer, Teaser, Clip)</string>
