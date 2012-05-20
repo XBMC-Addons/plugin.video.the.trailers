@@ -148,15 +148,18 @@ def show_filtered_movies(source_id, filter_criteria, filter_content):
 
 def ask_trailer_type(source, movie_title):
     trailer_types = source.get_trailer_types(movie_title)
-    if plugin.get_setting('ask_trailer') == 'true' and len(trailer_types) > 1:
-        dialog = xbmcgui.Dialog()
-        selected = dialog.select('Choose Trailer Type',
-                                 [t['title'] for t in trailer_types])
-        if selected == -1:
-            return
+    if plugin.get_setting('ask_trailer') == 'true':
+        if len(trailer_types) > 1:
+            dialog = xbmcgui.Dialog()
+            selected = dialog.select('Choose Trailer Type',
+                                     [t['title'] for t in trailer_types])
+            if selected == -1:
+                return
+        else:
+            selected = 0
+        return trailer_types[selected]['id']
     else:
-        selected = 0
-    return trailer_types[selected]['id']
+        return 'trailer'
 
 
 def ask_trailer_quality(source, movie_title):
