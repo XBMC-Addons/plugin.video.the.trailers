@@ -114,22 +114,20 @@ class AppleTrailers(object):
                    % movie_title)
         return self.TRAILER_QUALITIES
 
-    def get_trailer(self, movie_title, trailer_quality, trailer_type='trailer'):
+    def get_trailer(self, movie_title, quality_id, trailer_type='trailer'):
         self.__log(('get_trailer started with movie_title: %s '
-                    'trailer_type: %s trailer_quality: %s')
-                    % (movie_title, trailer_type, trailer_quality))
+                    'trailer_type: %s quality_id: %s')
+                    % (movie_title, trailer_type, quality_id))
         movie = self.get_single_movie(movie_title)
         url = self.MOVIE_URL % movie['movie_string']
         if trailer_type != 'trailer':
             url = url.replace('index', trailer_type)
-        cache_filename = '%s.xml' % movie['movie_string'].split('/')[1]
+        cache_filename = '%s-%s.xml' % (movie['movie_string'].split('/')[1], trailer_type)
         html = self.__get_url(url, cache_filename=cache_filename)
         r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
         section = re.search(r_section, html).group(1)
         tree = BS(section, convertEntities=BS.XML_ENTITIES)
         trailers = []
-        quality_id = [q['id'] for q in self.TRAILER_QUALITIES
-                      if q['title'] == trailer_quality][0]
         for s in tree.findAll('dict'):
             for k in s.findAll('key'):
                 if k.string == 'previewURL':
@@ -194,6 +192,8 @@ class AppleTrailers(object):
         return tree
 
     def __get_url(self, url, referer=None, cache_filename=None):
+        self.__log('__get_url started with url=%s, cache_filename=%s'
+                   % (url, cache_filename))
         filename = cache_filename or url.rsplit('/')[-1]
         cache_file = os.path.join(self.cache_path, filename)
         try:

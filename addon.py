@@ -146,86 +146,64 @@ def show_filtered_movies(source_id, filter_criteria, filter_content):
     return __add_movies(source_id, items)
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/')
-def show_trailer_types(source_id, movie_title):
-    __log('show_trailer_types started with source_id=%s movie_title=%s'
+def ask_trailer_type(source, movie_title):
+    trailer_types = source.get_trailer_types(movie_title)
+    if plugin.get_setting('ask_trailer') == 'true' and len(trailer_types) > 1:
+        dialog = xbmcgui.Dialog()
+        selected = dialog.select('Choose Trailer Type',
+                                 [t['title'] for t in trailer_types])
+        if selected == -1:
+            return
+    else:
+        selected = 0
+    return trailer_types[selected]['id']
+
+
+def ask_trailer_quality(source, movie_title):
+    trailer_qualities = source.get_trailer_qualities(movie_title)
+    if plugin.get_setting('ask_quality') == 'true' and len(trailer_qualities) > 1:
+        dialog = xbmcgui.Dialog()
+        selected = dialog.select('Choose Trailer Quality',
+                                 [t['title'] for t in trailer_qualities])
+        if selected == -1:
+            return
+    else:
+        selected = 0
+    return trailer_qualities[selected]['id']
+
+
+@plugin.route('/<source_id>/trailer/<movie_title>/play')
+def play_trailer(source_id, movie_title):
+    __log('play_trailer started with source_id=%s movie_title=%s '
           % (source_id, movie_title))
-    if not plugin.get_setting('ask_trailer') == 'true':
-        __log('show_trailer_types redirecting to show_trailer_qualities')
-        url = plugin.url_for('show_trailer_qualities',
-                             source_id=source_id,
-                             movie_title=movie_title,
-                             trailer_type='trailer')
-        return plugin.redirect(url)
-    else:
-        source = __get_source(source_id)
-        is_folder = plugin.get_setting('ask_quality') == 'true'
-        items = [{'label': i['title'],
-                  'is_folder': is_folder,
-                  'is_playable': not is_folder,
-                  'context_menu': __movie_cm_entries(source_id, movie_title,
-                                                      trailer_type=i['id']),
-                  'url': plugin.url_for('show_trailer_qualities',
-                                        source_id=source_id,
-                                        movie_title=movie_title,
-                                        trailer_type=i['id'])}
-                 for i in source.get_trailer_types(movie_title)]
-        return plugin.add_items(items)
-
-
-@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/')
-def show_trailer_qualities(source_id, movie_title, trailer_type):
-    __log(('show_trailer_qualities started with '
-           'source_id=%s movie_title=%s trailer_type=%s')
-          % (source_id, movie_title, trailer_type))
     source = __get_source(source_id)
-    if not plugin.get_setting('ask_quality') == 'true':
-        __log('show_trailer_qualities redirecting to play_trailer')
-        q_id = int(plugin.get_setting('trailer_quality'))
-        trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['title']
-        url = plugin.url_for('play_trailer',
-                             source_id=source_id,
-                             movie_title=movie_title,
-                             trailer_type=trailer_type,
-                             trailer_quality=trailer_quality)
-        return plugin.redirect(url)
-    else:
-        items = [{'label': i['title'],
-                  'is_playable': True,
-                  'is_folder': False,
-                  'url': plugin.url_for('play_trailer',
-                                        source_id=source_id,
-                                        movie_title=movie_title,
-                                        trailer_type=trailer_type,
-                                        trailer_quality=i['title'])}
-                 for i in source.get_trailer_qualities(movie_title)]
-        return plugin.add_items(items)
-
-
-@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/<trailer_quality>/play')
-def play_trailer(source_id, movie_title, trailer_type, trailer_quality):
-    __log(('play_trailer started with source_id=%s movie_title=%s '
-           'trailer_type=%s trailer_quality=%s')
-           % (source_id, movie_title, trailer_type, trailer_quality))
+    trailer_type = ask_trailer_type(source, movie_title)
+    if not trailer_type:
+        return
+    trailer_quality = ask_trailer_quality(source, movie_title)
+    if not trailer_quality:
+        return
     trailer_id = '|'.join((source_id, movie_title,
                            trailer_type, trailer_quality))
     downloaded_trailer = plugin.get_setting(trailer_id)
     if downloaded_trailer and os.path.isfile(downloaded_trailer):
         __log('trailer already downloaded, using downloaded version')
         return plugin.set_resolved_url(downloaded_trailer)
-    source = __get_source(source_id)
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
     return plugin.set_resolved_url(trailer_url)
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/download')
-def download_trailer(source_id, movie_title, trailer_type):
-    __log(('download_trailer started with source_id=%s movie_title=%s '
-           'trailer_type=%s') % (source_id, movie_title, trailer_type))
+@plugin.route('/<source_id>/trailer/<movie_title>/download')
+def download_trailer(source_id, movie_title):
+    __log('download_trailer started with source_id=%s movie_title=%s '
+         % (source_id, movie_title))
     source = __get_source(source_id)
+    trailer_type = ask_trailer_type(source, movie_title)
+    if not trailer_type:
+        return
     q_id = int(plugin.get_setting('trailer_quality_download'))
-    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['title']
+    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['id']
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
     sd = SimpleDownloader.SimpleDownloader()
@@ -253,10 +231,10 @@ def download_trailer(source_id, movie_title, trailer_type):
         __log('start downloading: %s to path: %s' % (filename, download_path))
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/<trailer_type>/download_play')
+@plugin.route('/<source_id>/trailer/<movie_title>/download_play')
 def download_play_trailer(source_id, movie_title, trailer_type):
-    __log(('download_play_trailer started with source_id=%s movie_title=%s '
-           'trailer_type=%s') % (source_id, movie_title, trailer_type))
+    __log('download_play_trailer started with source_id=%s movie_title=%s '
+         % (source_id, movie_title))
     return
 
 
@@ -276,17 +254,13 @@ def __add_movies(source_id, entries):
     __log('__add_movies start')
     items = []
     context_menu = __global_cm_entries(source_id)
-    is_playable = (plugin.get_setting('ask_quality') == 'false' and
-                   plugin.get_setting('ask_trailer') == 'false')
     for e in entries:
         movie = __format_movie(e)
         movie['context_menu'] = context_menu[:]
         movie['context_menu'].extend(__movie_cm_entries(source_id,
                                                         e['title'],
                                                         'trailer'))
-        movie['is_folder'] = not is_playable
-        movie['is_playable'] = is_playable
-        movie['url'] = plugin.url_for('show_trailer_types',
+        movie['url'] = plugin.url_for('play_trailer',
                                       source_id=source_id,
                                       movie_title=movie['label'])
         items.append(movie)
@@ -300,6 +274,8 @@ def __add_movies(source_id, entries):
 
 def __format_movie(m):
     return {'label': m['title'],
+            'is_playable': True,
+            'is_folder': False,
             'iconImage': m.get('thumb', 'DefaultVideo.png'),
             'info': {'title': m.get('title'),
                      'duration': m.get('duration', '0:00'),
