@@ -161,14 +161,17 @@ def ask_trailer_type(source, movie_title):
 
 def ask_trailer_quality(source, movie_title):
     trailer_qualities = source.get_trailer_qualities(movie_title)
-    if plugin.get_setting('ask_quality') == 'true' and len(trailer_qualities) > 1:
-        dialog = xbmcgui.Dialog()
-        selected = dialog.select('Choose Trailer Quality',
-                                 [t['title'] for t in trailer_qualities])
-        if selected == -1:
-            return
+    if plugin.get_setting('ask_quality') == 'true':
+        if len(trailer_qualities) > 1:
+            dialog = xbmcgui.Dialog()
+            selected = dialog.select('Choose Trailer Quality',
+                                     [t['title'] for t in trailer_qualities])
+            if selected == -1:
+                return
+        else:
+            selected = 0
     else:
-        selected = 0
+        selected = int(plugin.get_setting('trailer_quality'))
     return trailer_qualities[selected]['id']
 
 
