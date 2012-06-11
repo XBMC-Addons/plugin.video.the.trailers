@@ -214,7 +214,7 @@ def download_trailer(source_id, movie_title):
                                      trailer_type)
     sd = SimpleDownloader.SimpleDownloader()
     if not plugin.get_setting('trailer_download_path'):
-        plugin.open_settings()
+        plugin.open_settings(id="section_general")
     download_path = plugin.get_setting('trailer_download_path')
     if download_path:
         if '?|User-Agent=' in trailer_url:
@@ -247,6 +247,8 @@ def download_play_trailer(source_id, movie_title, trailer_type):
 @plugin.route('/add_to_couchpotato/<movie_title>')
 def add_to_couchpotato(movie_title):
     __log('add_to_couchpotato started with movie_title=%s' % movie_title)
+    import resources.lib.couchpotato as couchpotato
+    couchpotato.Main()
     return
 
 

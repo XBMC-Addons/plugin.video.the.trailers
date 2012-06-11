@@ -12,6 +12,7 @@
     <!-- Settings -->
     <string id="30010">Ask for trailer quality</string>
     <string id="30011">Ask for trailer type (Trailer, Teaser, Clip)</string>
+    <string id="30012">General</string>
     <string id="30030">Trailer quality (play)</string>
     <string id="30031">iPod</string>
     <string id="30032">Small</string>
@@ -27,4 +28,12 @@
     <string id="30100">Network Error</string>
     <string id="30101">Please check your internet connection</string>
     <string id="30102">and proxy Settings</string>
+    
+    <string id="30260">Enable Couch Potato integration</string>
+    <string id="30261">User name</string>
+    <string id="30262">Password</string>
+    <string id="30263">Server</string>
+    <string id="30264">Port</string>
+    <string id="30265">Use HTTPS</string>
+    <string id="30266">Couch Potato</string>
 </strings>
