@@ -22,7 +22,7 @@ from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict
 from resources.lib.exceptions import NetworkError
 import resources.lib.apple_trailers as apple_trailers
 import SimpleDownloader
-
+import urllib
 __addon_name__ = 'The Trailers'
 __id__ = 'plugin.video.the.trailers'
 
@@ -53,6 +53,11 @@ STRINGS = {'show_movie_info': 30000,
            'neterror_line1': 30101,
            'neterror_line2': 30102}
 
+class _urlopener( urllib.URLopener ):
+    version = "QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)"
+urllib._urlopener = _urlopener()
+
+
 
 class Plugin_mod(Plugin):
 
@@ -80,7 +85,7 @@ class Plugin_mod(Plugin):
         return urls
 
     def _make_listitem(self, label, label2='', iconImage='', thumbnail='',
-                       path='', **options):
+                       path='', VideoResolution='', VideoCodec='', Rating='', **options):
         li = xbmcgui.ListItem(label, label2=label2, iconImage=iconImage,
                               thumbnailImage=thumbnail, path=path)
         cleaned_info = clean_dict(options.get('info'))
@@ -238,9 +243,61 @@ def download_trailer(source_id, movie_title):
 
 
 @plugin.route('/<source_id>/trailer/<movie_title>/download_play')
-def download_play_trailer(source_id, movie_title, trailer_type):
+def download_play_trailer(source_id, movie_title):
     __log('download_play_trailer started with source_id=%s movie_title=%s '
          % (source_id, movie_title))
+    source = __get_source(source_id)
+    trailer_type = ask_trailer_type(source, movie_title)
+    if not trailer_type:
+        return
+    q_id = int(plugin.get_setting('trailer_quality_download'))
+    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['id']
+    trailer_url = source.get_trailer(movie_title, trailer_quality,
+                                     trailer_type)
+    if not plugin.get_setting('trailer_download_path'):
+        plugin.open_settings(id="section_general")
+    
+    download_path = plugin.get_setting('trailer_download_path')
+    if download_path:
+        if '?|User-Agent=' in trailer_url:
+            trailer_url, useragent = trailer_url.split('?|User-Agent=')
+            # Override User-Agent because SimpleDownloader doesn't support that
+            # native. Downloading from apple requires QT User-Agent
+
+        safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
+                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        safe_title = ''.join([c for c in movie_title if c in safe_chars])
+        filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
+                                    trailer_url.rsplit('.')[-1])
+    full_path = os.path.join(download_path, filename)
+    import xbmcvfs
+    if not xbmcvfs.exists(full_path):
+        pDialog = xbmcgui.DialogProgress()
+        pDialog.create( __addon_name__ )
+        pDialog.update( 0 )
+        import urllib
+        import xbmcaddon
+        tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')), filename).decode('utf-8')
+        # TODO: change text to downloading and add the amt download speed/time?
+        def _report_hook(count, blocksize, totalsize ):
+            percent = int( float( count * blocksize * 100) / totalsize )
+            msg1 = "Downloading"
+            msg2 = "%s" %filename
+            pDialog.update( percent, msg1, msg2 )
+            if (pDialog.iscanceled()):
+              xbmcvfs.delete(tmppath)
+        urllib.urlretrieve( trailer_url, tmppath , _report_hook)
+        
+        xbmcvfs.copy(tmppath, full_path)
+        if xbmcvfs.exists(full_path):
+            xbmcvfs.delete(tmppath)
+        pDialog.close()
+    trailer_id = '|'.join((source_id, movie_title,
+                           trailer_type, trailer_quality))
+    plugin.set_setting(trailer_id, full_path)
+    listitem = xbmcgui.ListItem(movie_title)
+    listitem.setInfo('video', {'Title': movie_title})
+    xbmc.Player( xbmc.PLAYER_CORE_MPLAYER ).play(full_path)
     return
 
 
