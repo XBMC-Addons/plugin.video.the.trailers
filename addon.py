@@ -53,11 +53,6 @@ STRINGS = {'show_movie_info': 30000,
            'neterror_line1': 30101,
            'neterror_line2': 30102}
 
-class _urlopener( urllib.URLopener ):
-    version = "QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)"
-urllib._urlopener = _urlopener()
-
-
 
 class Plugin_mod(Plugin):
 
@@ -281,11 +276,14 @@ def download_play_trailer(source_id, movie_title):
         # TODO: change text to downloading and add the amt download speed/time?
         def _report_hook(count, blocksize, totalsize ):
             percent = int( float( count * blocksize * 100) / totalsize )
-            msg1 = "Downloading"
+            msg1 = xbmcaddon.Addon().getLocalizedString(30013)
             msg2 = "%s" %filename
             pDialog.update( percent, msg1, msg2 )
             if (pDialog.iscanceled()):
               xbmcvfs.delete(tmppath)
+        class _urlopener( urllib.URLopener ):
+            version = useragent
+        urllib._urlopener = _urlopener()
         urllib.urlretrieve( trailer_url, tmppath , _report_hook)
         
         xbmcvfs.copy(tmppath, full_path)
