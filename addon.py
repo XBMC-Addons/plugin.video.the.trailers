@@ -321,13 +321,20 @@ def __movie_cm_entries(source_id, movie_title, trailer_type):
                                        source_id=source_id,
                                        movie_title=movie_title,
                                        trailer_type=trailer_type)
-    couchpotato_url = plugin.url_for('add_to_couchpotato',
-                                       movie_title=movie_title)
-    cm_entries =  [
-        (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
-        (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
-        (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url),
-    ]
+    if plugin.get_setting('cp_enable') == 'true':
+        couchpotato_url = plugin.url_for('add_to_couchpotato',
+                                           movie_title=movie_title)
+
+        cm_entries =  [
+          (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
+          (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
+          (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url),
+        ]
+    else:
+        cm_entries =  [
+          (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
+          (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
+        ]
     return cm_entries
 
 
