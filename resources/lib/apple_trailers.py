@@ -30,7 +30,7 @@ class AppleTrailers(object):
 
     MAIN_URL = 'http://trailers.apple.com/trailers/home/xml/current.xml'
     MOVIE_URL = 'http://trailers.apple.com/moviesxml/s/%s/index.xml'
-
+    '''
     TRAILER_QUALITIES = [{'title': 'iPod',
                           'id': 'i320.m4v'},
                          {'title': 'Small',
@@ -45,7 +45,15 @@ class AppleTrailers(object):
                           'id': 'h720p.mov'},
                          {'title': 'HD1080p',
                           'id': 'h1080p.mov'}, ]
-
+    '''
+    TRAILER_QUALITIES = [{'title': 'iPod',
+                          'id': 'i320.m4v'},
+                         {'title': 'HD480p',
+                          'id': 'h480p.mov'},
+                         {'title': 'HD720p',
+                          'id': 'h720p.mov'},
+                         {'title': 'HD1080p',
+                          'id': 'h1080p.mov'}, ]    
     FILTER_CRITERIA = [
 #        {'title': 'year',
 #         'id': 'year'},
