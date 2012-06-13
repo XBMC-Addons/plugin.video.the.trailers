@@ -23,6 +23,8 @@ from resources.lib.exceptions import NetworkError
 import resources.lib.apple_trailers as apple_trailers
 import SimpleDownloader
 import urllib
+import xbmcvfs
+import xbmcaddon
 __addon_name__ = 'The Trailers'
 __id__ = 'plugin.video.the.trailers'
 
@@ -80,7 +82,7 @@ class Plugin_mod(Plugin):
         return urls
 
     def _make_listitem(self, label, label2='', iconImage='', thumbnail='',
-                       path='', VideoResolution='', VideoCodec='', Rating='', **options):
+                       path='', **options):
         li = xbmcgui.ListItem(label, label2=label2, iconImage=iconImage,
                               thumbnailImage=thumbnail, path=path)
         cleaned_info = clean_dict(options.get('info'))
@@ -214,7 +216,7 @@ def download_trailer(source_id, movie_title):
                                      trailer_type)
     sd = SimpleDownloader.SimpleDownloader()
     if not plugin.get_setting('trailer_download_path'):
-        plugin.open_settings(id="section_general")
+        plugin.open_settings()
     download_path = plugin.get_setting('trailer_download_path')
     if download_path:
         if '?|User-Agent=' in trailer_url:
@@ -250,53 +252,49 @@ def download_play_trailer(source_id, movie_title):
     trailer_url = source.get_trailer(movie_title, trailer_quality,
                                      trailer_type)
     if not plugin.get_setting('trailer_download_path'):
-        plugin.open_settings(id="section_general")
-    
+        plugin.open_settings()
     download_path = plugin.get_setting('trailer_download_path')
     if download_path:
         if '?|User-Agent=' in trailer_url:
             trailer_url, useragent = trailer_url.split('?|User-Agent=')
             # Override User-Agent because SimpleDownloader doesn't support that
             # native. Downloading from apple requires QT User-Agent
-
+        else:
+            useragent = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
         safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
         safe_title = ''.join([c for c in movie_title if c in safe_chars])
         filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
                                     trailer_url.rsplit('.')[-1])
-    full_path = os.path.join(download_path, filename)
-    import xbmcvfs
-    if not xbmcvfs.exists(full_path):
-        pDialog = xbmcgui.DialogProgress()
-        pDialog.create( __addon_name__ )
-        pDialog.update( 0 )
-        import urllib
-        import xbmcaddon
-        tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')), filename).decode('utf-8')
-        # TODO: change text to downloading and add the amt download speed/time?
-        def _report_hook(count, blocksize, totalsize ):
-            percent = int( float( count * blocksize * 100) / totalsize )
-            msg1 = xbmcaddon.Addon().getLocalizedString(30013)
-            msg2 = "%s" %filename
-            pDialog.update( percent, msg1, msg2 )
-            if (pDialog.iscanceled()):
-              xbmcvfs.delete(tmppath)
-        class _urlopener( urllib.URLopener ):
-            version = useragent
-        urllib._urlopener = _urlopener()
-        urllib.urlretrieve( trailer_url, tmppath , _report_hook)
-        
-        xbmcvfs.copy(tmppath, full_path)
-        if xbmcvfs.exists(full_path):
-            xbmcvfs.delete(tmppath)
-        pDialog.close()
     trailer_id = '|'.join((source_id, movie_title,
                            trailer_type, trailer_quality))
-    plugin.set_setting(trailer_id, full_path)
-    listitem = xbmcgui.ListItem(movie_title)
-    listitem.setInfo('video', {'Title': movie_title})
-    xbmc.Player( xbmc.PLAYER_CORE_MPLAYER ).play(full_path)
-    return
+    full_path = os.path.join(download_path, filename)
+    if not plugin.get_setting(trailer_id):
+        pDialog = xbmcgui.DialogProgress()
+        pDialog.create(__addon_name__)
+        pDialog.update(0)
+        tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),
+                               filename).decode('utf-8')
+        # TODO: change text to downloading and add the amt download speed/time?
+        def _report_hook(count, blocksize, totalsize ):
+            percent = int(float(count*blocksize*100)/totalsize)
+            msg1 = xbmcaddon.Addon().getLocalizedString(30013)
+            msg2 = "%s"%filename
+            pDialog.update(percent, msg1, msg2)
+            if (pDialog.iscanceled()):
+              xbmcvfs.delete(tmppath)
+        class _urlopener(urllib.URLopener):
+            version = useragent
+        urllib._urlopener = _urlopener()
+        if not urllib.urlretrieve(trailer_url,
+                                  tmppath,
+                                  _report_hook):
+          xbmcvfs.delete(tmppath)
+          return
+        xbmcvfs.copy(tmppath, full_path)
+        xbmcvfs.delete(tmppath)
+        pDialog.close()
+    return plugin.set_resolved_url(full_path)
 
 
 @plugin.route('/add_to_couchpotato/<movie_title>')
@@ -376,20 +374,16 @@ def __movie_cm_entries(source_id, movie_title, trailer_type):
                                        source_id=source_id,
                                        movie_title=movie_title,
                                        trailer_type=trailer_type)
+    cm_entries =  [
+      (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
+      (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
+    ]
     if plugin.get_setting('cp_enable') == 'true':
         couchpotato_url = plugin.url_for('add_to_couchpotato',
                                            movie_title=movie_title)
-
-        cm_entries =  [
-          (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
-          (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
-          (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url),
-        ]
-    else:
-        cm_entries =  [
-          (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
-          (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
-        ]
+        cm_entries.append(
+           (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url)
+        )
     return cm_entries
 
 
