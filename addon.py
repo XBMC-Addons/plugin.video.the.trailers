@@ -290,7 +290,8 @@ def download_play_trailer(source_id, movie_title):
         msg2 = "%s"%filename
         pDialog.update(percent, msg1, msg2)
         if (pDialog.iscanceled()):
-          xbmcvfs.delete(tmppath)
+            xbmcvfs.delete(tmppath)
+            return
     class _urlopener(urllib.URLopener):
         version = useragent
     urllib._urlopener = _urlopener()
