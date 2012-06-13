@@ -229,12 +229,16 @@ def download_trailer(source_id, movie_title):
         safe_title = ''.join([c for c in movie_title if c in safe_chars])
         filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
                                     trailer_url.rsplit('.')[-1])
-        params = {'url': trailer_url,
-                  'download_path': download_path}
-        sd.download(filename, params)
         full_path = os.path.join(download_path, filename)
         trailer_id = '|'.join((source_id, movie_title,
                                trailer_type, trailer_quality))
+        downloaded_trailer = plugin.get_setting(trailer_id)
+        if downloaded_trailer and os.path.isfile(downloaded_trailer):
+            plugin.set_setting(trailer_id, full_path)
+            return
+        params = {'url': trailer_url,
+                  'download_path': download_path}
+        sd.download(filename, params)
         plugin.set_setting(trailer_id, full_path)
         __log('start downloading: %s to path: %s' % (filename, download_path))
 
@@ -269,31 +273,36 @@ def download_play_trailer(source_id, movie_title):
     trailer_id = '|'.join((source_id, movie_title,
                            trailer_type, trailer_quality))
     full_path = os.path.join(download_path, filename)
-    if not plugin.get_setting(trailer_id):
-        pDialog = xbmcgui.DialogProgress()
-        pDialog.create(__addon_name__)
-        pDialog.update(0)
-        tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),
-                               filename).decode('utf-8')
-        # TODO: change text to downloading and add the amt download speed/time?
-        def _report_hook(count, blocksize, totalsize ):
-            percent = int(float(count*blocksize*100)/totalsize)
-            msg1 = xbmcaddon.Addon().getLocalizedString(30013)
-            msg2 = "%s"%filename
-            pDialog.update(percent, msg1, msg2)
-            if (pDialog.iscanceled()):
-              xbmcvfs.delete(tmppath)
-        class _urlopener(urllib.URLopener):
-            version = useragent
-        urllib._urlopener = _urlopener()
-        if not urllib.urlretrieve(trailer_url,
-                                  tmppath,
-                                  _report_hook):
+    downloaded_trailer = plugin.get_setting(trailer_id)
+    if downloaded_trailer and os.path.isfile(downloaded_trailer):
+        __log('trailer already downloaded, using downloaded version')
+        plugin.set_setting(trailer_id, full_path)
+        return plugin.set_resolved_url(downloaded_trailer)
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create(__addon_name__)
+    pDialog.update(0)
+    tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),
+                           filename).decode('utf-8')
+    # TODO: change text to downloading and add the amt download speed/time?
+    def _report_hook(count, blocksize, totalsize ):
+        percent = int(float(count*blocksize*100)/totalsize)
+        msg1 = xbmcaddon.Addon().getLocalizedString(30013)
+        msg2 = "%s"%filename
+        pDialog.update(percent, msg1, msg2)
+        if (pDialog.iscanceled()):
           xbmcvfs.delete(tmppath)
-          return
-        xbmcvfs.copy(tmppath, full_path)
-        xbmcvfs.delete(tmppath)
-        pDialog.close()
+    class _urlopener(urllib.URLopener):
+        version = useragent
+    urllib._urlopener = _urlopener()
+    if not urllib.urlretrieve(trailer_url,
+                              tmppath,
+                              _report_hook):
+      xbmcvfs.delete(tmppath)
+      return
+    xbmcvfs.copy(tmppath, full_path)
+    xbmcvfs.delete(tmppath)
+    pDialog.close()
+    plugin.set_setting(trailer_id, full_path)
     return plugin.set_resolved_url(full_path)
 
 
