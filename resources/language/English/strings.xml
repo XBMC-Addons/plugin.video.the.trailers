@@ -28,7 +28,10 @@
     <string id="30100">Network Error</string>
     <string id="30101">Please check your internet connection</string>
     <string id="30102">and proxy Settings</string>
-    
+    <!-- Select Dialogs -->
+    <string id="30120">Choose Trailer Type</string>
+    <string id="30121">Choose Trailer Quality</string>
+    <!-- Couch Potato -->
     <string id="30260">Enable Couch Potato integration</string>
     <string id="30261">User name</string>
     <string id="30262">Password</string>

@@ -53,7 +53,9 @@ STRINGS = {'show_movie_info': 30000,
            'add_to_cp': 30007,
            'neterror_title': 30100,
            'neterror_line1': 30101,
-           'neterror_line2': 30102}
+           'neterror_line2': 30102,
+           'choose_trailer_type': 30120,
+           'choose_trailer_quality': 30121,}
 
 
 class Plugin_mod(Plugin):
@@ -153,7 +155,7 @@ def ask_trailer_type(source, movie_title):
     if plugin.get_setting('ask_trailer') == 'true':
         if len(trailer_types) > 1:
             dialog = xbmcgui.Dialog()
-            selected = dialog.select('Choose Trailer Type',
+            selected = dialog.select(_('choose_trailer_type'),
                                      [t['title'] for t in trailer_types])
             if selected == -1:
                 return
@@ -169,7 +171,7 @@ def ask_trailer_quality(source, movie_title):
     if plugin.get_setting('ask_quality') == 'true':
         if len(trailer_qualities) > 1:
             dialog = xbmcgui.Dialog()
-            selected = dialog.select('Choose Trailer Quality',
+            selected = dialog.select(_('choose_trailer_quality'),
                                      [t['title'] for t in trailer_qualities])
             if selected == -1:
                 return
