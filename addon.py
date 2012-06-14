@@ -165,9 +165,10 @@ def show_filtered_movies(source_id, filter_criteria, filter_content):
 def get_trailer(source_id, movie_title, mode):
     __log('get_trailer started with mode=%s source_id=%s movie_title=%s '
           % (mode, source_id, movie_title))
+    is_download = mode == 'download'
     try:
         local_path, remote_url, trailer_id = __select_check_trailer(
-            source_id, movie_title, is_download=False,
+            source_id, movie_title, is_download=is_download,
         )
     except NoDownloadPath:
         xbmcgui.Dialog().ok(_('no_download_path'),
