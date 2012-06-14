@@ -19,9 +19,3 @@ class NoQualitySelected(Exception):
 
 class NoTrailerSelected(Exception):
     pass
-
-
-class DownloadAborted(Exception):
-
-    def __init__(self):
-        raise

@@ -270,14 +270,22 @@ def download_play_trailer(local_path, remote_url, trailer_id):
         msg1 = ''
         msg2 = filename
         if pDialog.iscanceled():
-            xbmcvfs.delete(tmppath)
-            raise DownloadAborted
+            # raise KeyboardInterrupt to stop download in progress
+            raise KeyboardInterrupt
         pDialog.update(percent, msg1, msg2)
 
     __log('start downloading: %s to path: %s' % (filename, download_path))
-    if not urllib.urlretrieve(remote_url, tmppath, _report_hook):
-        __log('downloading failed')
+    try:
+        if not urllib.urlretrieve(remote_url, tmppath, _report_hook):
+            __log('downloading failed')
+            xbmcvfs.delete(tmppath)
+            pDialog.close()
+            return
+    # catch KeyboardInterrupt which was rised to stop the dl silently
+    except KeyboardInterrupt:
+        __log('downloading canceled')
         xbmcvfs.delete(tmppath)
+        pDialog.close()
         return
     xbmc.sleep(100)
     __log('downloading successfully completed, start moving')
