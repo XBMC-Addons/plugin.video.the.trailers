@@ -337,13 +337,12 @@ def open_settings():
 def __add_movies(source_id, entries):
     __log('__add_movies start')
     items = []
-    context_menu = __global_cm_entries(source_id)
+    filter_criteria = __get_source(source_id).get_filter_criteria()
     for e in entries:
         movie = __format_movie(e)
-        movie['context_menu'] = context_menu[:]
-        movie['context_menu'].extend(__movie_cm_entries(source_id,
-                                                        e['title'],
-                                                        'trailer'))
+        movie['context_menu'] = __movie_cm_entries(source_id,
+                                                   e['title'],
+                                                   filter_criteria)
         movie['url'] = plugin.url_for('play_trailer',
                                       source_id=source_id,
                                       movie_title=movie['label'])
@@ -388,12 +387,14 @@ def __get_source(source_id):
         raise Exception('UNKNOWN SOURCE: %s' % source_id)
 
 
-def __movie_cm_entries(source_id, movie_title, trailer_type):
+def __movie_cm_entries(source_id, movie_title, filter_criteria):
     download_url = plugin.url_for('download_trailer',
                                   source_id=source_id,
                                   movie_title=movie_title)
+    show_settings_url = plugin.url_for('open_settings')
     cm_entries = [
-      (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
+        (_('show_movie_info'), 'XBMC.Action(Info)'),
+        (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
     ]
     if plugin.get_setting('cp_enable') == 'true':
         couchpotato_url = plugin.url_for('add_to_couchpotato',
@@ -401,23 +402,17 @@ def __movie_cm_entries(source_id, movie_title, trailer_type):
         cm_entries.append(
            (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url),
         )
-    return cm_entries
-
-
-def __global_cm_entries(source_id):
-    show_settings_url = plugin.url_for('open_settings')
-    cm_entries = [
-        (_('show_movie_info'), 'XBMC.Action(Info)'),
-        (_('open_settings'), 'XBMC.Container.Update(%s)' % show_settings_url),
-        (_('show_downloads'), 'XBMC.Container.Update(%s)' % ''),  # fixme
-    ]
-    for fc in __get_source(source_id).get_filter_criteria():
+    for fc in filter_criteria:
         url = plugin.url_for('show_filter_content',
                              source_id=source_id,
                              filter_criteria=fc['id'])
         cm_entries.append(
             (_('browse_by') % fc['title'], 'XBMC.Container.Update(%s)' % url),
         )
+    cm_entries.extend((
+        (_('show_downloads'), 'XBMC.Container.Update(%s)' % ''),  # fixme
+        (_('open_settings'), 'XBMC.Container.Update(%s)' % show_settings_url),
+    ))
     return cm_entries
 
 
