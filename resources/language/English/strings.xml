@@ -17,6 +17,7 @@
     <string id="30015">Download+Play</string>
     <string id="30016">Playback</string>
     <string id="30017">Download</string>
+    <string id="30020">Force ViewMode to Thumbnail</string>
     <string id="30030">Trailer quality (stream)</string>
     <string id="30031">iPod</string>
     <string id="30032">Small</string>
@@ -27,7 +28,8 @@
     <string id="30037">HD1080p</string>
     <string id="30040">Trailer quality (download)</string>
     <string id="30050">Trailer download path</string>
-    <string id="30020">Force ViewMode to Thumbnail</string>
+    <!-- Message Dialogs -->
+    <string id="30061">Downloading Trailer</string>
     <!-- Network Error -->
     <string id="30100">Network Error</string>
     <string id="30101">Please check your internet connection</string>

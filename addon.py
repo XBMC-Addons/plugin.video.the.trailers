@@ -62,7 +62,8 @@ STRINGS = {'show_movie_info': 30000,
            'choose_trailer_type': 30120,
            'choose_trailer_quality': 30121,
            'no_download_path': 30130,
-           'please_set_path': 30131}
+           'please_set_path': 30131,
+           'downloading_trailer': 30061}
 
 
 class Plugin_mod(Plugin):
@@ -267,7 +268,7 @@ def download_play_trailer(local_path, remote_url, trailer_id):
     # TODO: change text to downloading and add the amt download speed/time?
     def _report_hook(count, blocksize, totalsize):
         percent = int(float(count * blocksize * 100) / totalsize)
-        msg1 = ''
+        msg1 = _('downloading_trailer')
         msg2 = filename
         if pDialog.iscanceled():
             # raise KeyboardInterrupt to stop download in progress
