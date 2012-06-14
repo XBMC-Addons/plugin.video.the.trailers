@@ -8,7 +8,7 @@
         <setting id="playback_mode" type="enum" label="30013" default="0" lvalues="30014|30015"/>
         <setting type="lsep" />
         <setting id="ask_quality" type="bool" label="30010" default="false"/>
-        <setting id="trailer_quality" type="enum" label="30030" enable="eq(-1,false)" default="3" lvalues="30031|30035|30036|30037"/>
+        <setting id="trailer_quality" type="enum" label="30030" enable="eq(-1,false)" default="1" lvalues="30031|30035|30036|30037"/>
     </category>
     <category label="30017" id="download">
         <setting id="trailer_quality_download" type="enum" label="30040" default="3" lvalues="30031|30035|30036|30037"/>
