@@ -6,14 +6,18 @@
     <string id="30002">Browse by %s</string>
     <string id="30003">genre</string>
     <string id="30004">Download</string>
-    <string id="30005">Download + Play</string>
     <string id="30006">Show Downloads</string>
     <string id="30007">Add to CouchPotato</string>
     <!-- Settings -->
-    <string id="30010">Ask for trailer quality</string>
+    <string id="30010">Ask for trailer quality (stream)</string>
     <string id="30011">Ask for trailer type (Trailer, Teaser, Clip)</string>
     <string id="30012">General</string>
-    <string id="30030">Trailer quality (play)</string>
+    <string id="30013">Playback Mode</string>
+    <string id="30014">Stream</string>
+    <string id="30015">Download+Play</string>
+    <string id="30016">Playback</string>
+    <string id="30017">Download</string>
+    <string id="30030">Trailer quality (stream)</string>
     <string id="30031">iPod</string>
     <string id="30032">Small</string>
     <string id="30033">Medium</string>
@@ -31,6 +35,9 @@
     <!-- Select Dialogs -->
     <string id="30120">Choose Trailer Type</string>
     <string id="30121">Choose Trailer Quality</string>
+    <!-- OK Dialogs -->
+    <string id="30130">No download path</string>
+    <string id="30131">Please set download path</string>
     <!-- Couch Potato -->
     <string id="30260">Enable Couch Potato integration</string>
     <string id="30261">User name</string>

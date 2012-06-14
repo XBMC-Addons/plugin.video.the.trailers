@@ -53,12 +53,12 @@ class AppleTrailers(object):
                          {'title': 'HD720p',
                           'id': 'h720p.mov'},
                          {'title': 'HD1080p',
-                          'id': 'h1080p.mov'}, ]    
+                          'id': 'h1080p.mov'}, ]
     FILTER_CRITERIA = [
 #        {'title': 'year',
 #         'id': 'year'},
         {'title': 'genre',
-         'id': 'genre'}, 
+         'id': 'genre'},
     ]
 
     UA = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
@@ -130,7 +130,8 @@ class AppleTrailers(object):
         url = self.MOVIE_URL % movie['movie_string']
         if trailer_type != 'trailer':
             url = url.replace('index', trailer_type)
-        cache_filename = '%s-%s.xml' % (movie['movie_string'].split('/')[1], trailer_type)
+        cache_filename = '%s-%s.xml' % (movie['movie_string'].split('/')[1],
+                                        trailer_type)
         html = self.__get_url(url, cache_filename=cache_filename)
         r_section = re.compile('<array>(.*?)</array>', re.DOTALL)
         section = re.search(r_section, html).group(1)

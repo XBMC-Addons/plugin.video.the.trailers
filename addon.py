@@ -17,14 +17,20 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# system imports
 import os
-from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict
-from resources.lib.exceptions import NetworkError
-import resources.lib.apple_trailers as apple_trailers
-import SimpleDownloader
 import urllib
+
+# xbmc imports
+from xbmcswift import Plugin, xbmc, xbmcplugin, xbmcgui, clean_dict, xbmcaddon
 import xbmcvfs
-import xbmcaddon
+import SimpleDownloader
+
+# addon imports
+from resources.lib.exceptions import *
+import resources.lib.apple_trailers as apple_trailers
+
+
 __addon_name__ = 'The Trailers'
 __id__ = 'plugin.video.the.trailers'
 
@@ -48,14 +54,15 @@ STRINGS = {'show_movie_info': 30000,
            'browse_by': 30002,
            'genre': 30003,
            'download_trailer': 30004,
-           'download_play': 30005,
            'show_downloads': 30006,
            'add_to_cp': 30007,
            'neterror_title': 30100,
            'neterror_line1': 30101,
            'neterror_line2': 30102,
            'choose_trailer_type': 30120,
-           'choose_trailer_quality': 30121,}
+           'choose_trailer_quality': 30121,
+           'no_download_path': 30130,
+           'please_set_path': 30131}
 
 
 class Plugin_mod(Plugin):
@@ -150,163 +157,158 @@ def show_filtered_movies(source_id, filter_criteria, filter_content):
     return __add_movies(source_id, items)
 
 
+@plugin.route('/<source_id>/trailer/<movie_title>/play',
+              mode='play', name='play_trailer')
+@plugin.route('/<source_id>/trailer/<movie_title>/download',
+              mode='download', name='download_trailer')
+def get_trailer(source_id, movie_title, mode):
+    __log('get_trailer started with mode=%s source_id=%s movie_title=%s '
+          % (mode, source_id, movie_title))
+    try:
+        local_path, remote_url, trailer_id = __select_check_trailer(
+            source_id, movie_title, is_download=False,
+        )
+    except NoDownloadPath:
+        xbmcgui.Dialog().ok(_('no_download_path'),
+                            _('no_download_path'))
+    except (NoQualitySelected, NoTrailerSelected):
+        return
+
+    if mode == 'play':
+        if plugin.get_setting('playback_mode') == '0':
+            # stream
+            return play_trailer(local_path, remote_url)
+        elif plugin.get_setting('playback_mode') == '1':
+            # download+play
+            return download_play_trailer(local_path, remote_url, trailer_id)
+
+    elif mode == 'download':
+        # download in background
+        return download_trailer(local_path, remote_url, trailer_id)
+
+
 def ask_trailer_type(source, movie_title):
-    trailer_types = source.get_trailer_types(movie_title)
+    # if the user wants to be asked, show the select dialog
     if plugin.get_setting('ask_trailer') == 'true':
+        trailer_types = source.get_trailer_types(movie_title)
+        # is there more than one trailer_types, ask
         if len(trailer_types) > 1:
             dialog = xbmcgui.Dialog()
             selected = dialog.select(_('choose_trailer_type'),
                                      [t['title'] for t in trailer_types])
+            # if the user canceled the dialog, raise
             if selected == -1:
-                return
+                raise NoTrailerSelected
+        # there is only one trailer_type, don't ask and choose it
         else:
             selected = 0
         return trailer_types[selected]['id']
+    # the user doesnt want to be asked, let the scraper choose the most recent
     else:
         return 'trailer'
 
 
 def ask_trailer_quality(source, movie_title):
     trailer_qualities = source.get_trailer_qualities(movie_title)
+    # if the user wants to be asked the quality, show the dialog
     if plugin.get_setting('ask_quality') == 'true':
+        # if there are more than one trailer qualities, ask
         if len(trailer_qualities) > 1:
             dialog = xbmcgui.Dialog()
             selected = dialog.select(_('choose_trailer_quality'),
                                      [t['title'] for t in trailer_qualities])
+            # if the user canceled the dialog, raise
             if selected == -1:
-                return
+                raise NoQualitySelected
+        # there is only one trailer quality, don't ask and choose it
         else:
             selected = 0
+    # the user doesnt want to be asked, choose from settings
     else:
         selected = int(plugin.get_setting('trailer_quality'))
     return trailer_qualities[selected]['id']
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/play')
-def play_trailer(source_id, movie_title):
-    __log('play_trailer started with source_id=%s movie_title=%s '
-          % (source_id, movie_title))
-    source = __get_source(source_id)
-    trailer_type = ask_trailer_type(source, movie_title)
-    if not trailer_type:
-        return
-    trailer_quality = ask_trailer_quality(source, movie_title)
-    if not trailer_quality:
-        return
-    trailer_id = '|'.join((source_id, movie_title,
-                           trailer_type, trailer_quality))
-    downloaded_trailer = plugin.get_setting(trailer_id)
-    if downloaded_trailer and os.path.isfile(downloaded_trailer):
-        __log('trailer already downloaded, using downloaded version')
-        return plugin.set_resolved_url(downloaded_trailer)
-    trailer_url = source.get_trailer(movie_title, trailer_quality,
-                                     trailer_type)
+def play_trailer(local_path, remote_url):
+    # if remote_url is None, trailer is already downloaded - play local one
+    trailer_url = remote_url or local_path
     return plugin.set_resolved_url(trailer_url)
 
 
-@plugin.route('/<source_id>/trailer/<movie_title>/download')
-def download_trailer(source_id, movie_title):
-    __log('download_trailer started with source_id=%s movie_title=%s '
-         % (source_id, movie_title))
-    source = __get_source(source_id)
-    trailer_type = ask_trailer_type(source, movie_title)
-    if not trailer_type:
-        return
-    q_id = int(plugin.get_setting('trailer_quality_download'))
-    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['id']
-    trailer_url = source.get_trailer(movie_title, trailer_quality,
-                                     trailer_type)
-    sd = SimpleDownloader.SimpleDownloader()
-    if not plugin.get_setting('trailer_download_path'):
-        plugin.open_settings()
-    download_path = plugin.get_setting('trailer_download_path')
-    if download_path:
-        if '?|User-Agent=' in trailer_url:
-            trailer_url, useragent = trailer_url.split('?|User-Agent=')
-            # Override User-Agent because SimpleDownloader doesn't support that
-            # native. Downloading from apple requires QT User-Agent
-            sd.common.USERAGENT = useragent
-        safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
-                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-        safe_title = ''.join([c for c in movie_title if c in safe_chars])
-        filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
-                                    trailer_url.rsplit('.')[-1])
-        full_path = os.path.join(download_path, filename)
-        trailer_id = '|'.join((source_id, movie_title,
-                               trailer_type, trailer_quality))
-        downloaded_trailer = plugin.get_setting(trailer_id)
-        if downloaded_trailer and os.path.isfile(downloaded_trailer):
-            plugin.set_setting(trailer_id, full_path)
-            return
-        params = {'url': trailer_url,
-                  'download_path': download_path}
-        sd.download(filename, params)
-        plugin.set_setting(trailer_id, full_path)
-        __log('start downloading: %s to path: %s' % (filename, download_path))
+def download_play_trailer(local_path, remote_url, trailer_id):
+    # if remote_url is None, trailer is already downloaded - play it
+    if not remote_url:
+        return plugin.set_resolved_url(local_path)
 
-
-@plugin.route('/<source_id>/trailer/<movie_title>/download_play')
-def download_play_trailer(source_id, movie_title):
-    __log('download_play_trailer started with source_id=%s movie_title=%s '
-         % (source_id, movie_title))
-    source = __get_source(source_id)
-    trailer_type = ask_trailer_type(source, movie_title)
-    if not trailer_type:
-        return
-    q_id = int(plugin.get_setting('trailer_quality_download'))
-    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['id']
-    trailer_url = source.get_trailer(movie_title, trailer_quality,
-                                     trailer_type)
-    if not plugin.get_setting('trailer_download_path'):
-        plugin.open_settings()
-    download_path = plugin.get_setting('trailer_download_path')
-    if download_path:
-        if '?|User-Agent=' in trailer_url:
-            trailer_url, useragent = trailer_url.split('?|User-Agent=')
-            # Override User-Agent because SimpleDownloader doesn't support that
-            # native. Downloading from apple requires QT User-Agent
-        else:
-            useragent = 'QuickTime/7.6.5 (qtver=7.6.5;os=Windows NT 5.1Service Pack 3)'
-        safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
-                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-        safe_title = ''.join([c for c in movie_title if c in safe_chars])
-        filename = '%s-%s-%s.%s' % (safe_title, trailer_type, trailer_quality,
-                                    trailer_url.rsplit('.')[-1])
-    trailer_id = '|'.join((source_id, movie_title,
-                           trailer_type, trailer_quality))
-    full_path = os.path.join(download_path, filename)
-    downloaded_trailer = plugin.get_setting(trailer_id)
-    if downloaded_trailer and os.path.isfile(downloaded_trailer):
-        __log('trailer already downloaded, using downloaded version')
-        plugin.set_setting(trailer_id, full_path)
-        return plugin.set_resolved_url(downloaded_trailer)
+    # we need to sleep before creating progress dialog
+    xbmc.sleep(500)
+    # create progress dialog
     pDialog = xbmcgui.DialogProgress()
     pDialog.create(__addon_name__)
     pDialog.update(0)
-    tmppath = os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),
-                           filename).decode('utf-8')
+
+    # if there is a useragent set in the url, split it for urllib downloading
+    if '?|User-Agent=' in remote_url:
+        remote_url, useragent = remote_url.split('?|User-Agent=')
+        __log('detected useragent:"%s"' % useragent)
+
+        class _urlopener(urllib.URLopener):
+            version = useragent
+        urllib._urlopener = _urlopener()
+
+
+    # split filename from local_path for dialog line
+    download_path, filename = os.path.split(local_path)
+    tmppath = os.path.join(
+        xbmc.translatePath(plugin._plugin.getAddonInfo('profile')),
+        filename,
+    ).decode('utf-8')
+
     # TODO: change text to downloading and add the amt download speed/time?
-    def _report_hook(count, blocksize, totalsize ):
-        percent = int(float(count*blocksize*100)/totalsize)
-        msg1 = xbmcaddon.Addon().getLocalizedString(30013)
-        msg2 = "%s"%filename
-        pDialog.update(percent, msg1, msg2)
-        if (pDialog.iscanceled()):
+    def _report_hook(count, blocksize, totalsize):
+        percent = int(float(count * blocksize * 100) / totalsize)
+        msg1 = ''
+        msg2 = filename
+        if pDialog.iscanceled():
             xbmcvfs.delete(tmppath)
-            return
-    class _urlopener(urllib.URLopener):
-        version = useragent
-    urllib._urlopener = _urlopener()
-    if not urllib.urlretrieve(trailer_url,
-                              tmppath,
-                              _report_hook):
-      xbmcvfs.delete(tmppath)
-      return
-    xbmcvfs.copy(tmppath, full_path)
+            raise DownloadAborted
+        pDialog.update(percent, msg1, msg2)
+
+    __log('start downloading: %s to path: %s' % (filename, download_path))
+    if not urllib.urlretrieve(remote_url, tmppath, _report_hook):
+        __log('downloading failed')
+        xbmcvfs.delete(tmppath)
+        return
+    xbmc.sleep(100)
+    __log('downloading successfully completed, start moving')
+    xbmcvfs.copy(tmppath, local_path)
     xbmcvfs.delete(tmppath)
+    __log('moving completed')
     pDialog.close()
-    plugin.set_setting(trailer_id, full_path)
-    return plugin.set_resolved_url(full_path)
+    plugin.set_setting(trailer_id, local_path)
+    __log('start playback')
+    return plugin.set_resolved_url(local_path)
+
+
+def download_trailer(local_path, remote_url, trailer_id):
+     # if remote_url is None, trailer is already downloaded, do nothing
+    if not remote_url:
+        return
+    sd = SimpleDownloader.SimpleDownloader()
+    if '?|User-Agent=' in remote_url:
+        remote_url, useragent = remote_url.split('?|User-Agent=')
+        # Override User-Agent because SimpleDownloader doesn't support that
+        # native. Downloading from apple requires QT User-Agent
+        sd.common.USERAGENT = useragent
+    download_path, filename = os.path.split(local_path)
+    params = {'url': remote_url,
+              'download_path': download_path}
+    # start the download in background
+    sd.download(filename, params)
+    # set the setting - if the download is not finished but playback is tried,
+    # the check isfile will fail and it won't be there before finish
+    plugin.set_setting(trailer_id, local_path)
+    __log('start downloading: %s to path: %s' % (filename, download_path))
 
 
 @plugin.route('/add_to_couchpotato/<movie_title>')
@@ -380,41 +382,74 @@ def __get_source(source_id):
 def __movie_cm_entries(source_id, movie_title, trailer_type):
     download_url = plugin.url_for('download_trailer',
                                   source_id=source_id,
-                                  movie_title=movie_title,
-                                  trailer_type=trailer_type)
-    download_play_url = plugin.url_for('download_play_trailer',
-                                       source_id=source_id,
-                                       movie_title=movie_title,
-                                       trailer_type=trailer_type)
-    cm_entries =  [
+                                  movie_title=movie_title)
+    cm_entries = [
       (_('download_trailer'), 'XBMC.RunPlugin(%s)' % download_url),
-      (_('download_play'), 'XBMC.RunPlugin(%s)' % download_play_url),
     ]
     if plugin.get_setting('cp_enable') == 'true':
         couchpotato_url = plugin.url_for('add_to_couchpotato',
                                            movie_title=movie_title)
         cm_entries.append(
-           (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url)
+           (_('add_to_cp'), 'XBMC.RunPlugin(%s)' % couchpotato_url),
         )
     return cm_entries
 
 
 def __global_cm_entries(source_id):
-    show_settings_url =  plugin.url_for('open_settings')
-    show_downloads_url = ''  # fixme
+    show_settings_url = plugin.url_for('open_settings')
     cm_entries = [
         (_('show_movie_info'), 'XBMC.Action(Info)'),
         (_('open_settings'), 'XBMC.Container.Update(%s)' % show_settings_url),
-        (_('show_downloads'), 'XBMC.Container.Update(%s)' % show_downloads_url),
+        (_('show_downloads'), 'XBMC.Container.Update(%s)' % ''),  # fixme
     ]
     for fc in __get_source(source_id).get_filter_criteria():
         url = plugin.url_for('show_filter_content',
                              source_id=source_id,
                              filter_criteria=fc['id'])
         cm_entries.append(
-            (_('browse_by') % fc['title'], 'XBMC.Container.Update(%s)' % url)
+            (_('browse_by') % fc['title'], 'XBMC.Container.Update(%s)' % url),
         )
     return cm_entries
+
+
+def __select_check_trailer(source_id, movie_title, is_download):
+    __log(('__select_check_trailer started with source_id=%s movie_title=%s '
+           'is_download=%s') % (source_id, movie_title, is_download))
+    source = __get_source(source_id)
+    trailer_type = ask_trailer_type(source, movie_title)
+
+    # check if there is already a downloaded trailer in download_quality
+    q_id = int(plugin.get_setting('trailer_quality_download'))
+    trailer_quality = source.get_trailer_qualities(movie_title)[q_id]['id']
+    download_trailer_id = '|'.join(
+        (source_id, movie_title, trailer_type, trailer_quality),
+    )
+    local_path = plugin.get_setting(download_trailer_id)
+    if local_path and os.path.isfile(local_path):
+        # there is a already downloaded trailer, signal with empty remote_url
+        __log('trailer already downloaded, using downloaded version')
+        remote_url = None
+    else:
+        # there is no already downloaded trailer
+        if not is_download:
+            # on play (and not download) the quality may differ
+            trailer_quality = ask_trailer_quality(source, movie_title)
+        if not plugin.get_setting('trailer_download_path'):
+            xbmcgui.Dialog().ok(_('no_download_path'),
+                                _('please_set_path'))
+            plugin.open_settings()
+        download_path = plugin.get_setting('trailer_download_path')
+        if not download_path:
+            __log('still no download_path set - aborting')
+            raise NoDownloadPath
+        safe_chars = ('-_. abcdefghijklmnopqrstuvwxyz'
+                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        safe_title = ''.join([c for c in movie_title if c in safe_chars])
+        filename = '%s-%s-%s' % (safe_title, trailer_type, trailer_quality)
+        local_path = os.path.join(download_path, filename)
+        remote_url = source.get_trailer(movie_title, trailer_quality,
+                                        trailer_type)
+    return (local_path, remote_url, download_trailer_id)
 
 
 def _(s):
