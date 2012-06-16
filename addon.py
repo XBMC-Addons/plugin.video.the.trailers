@@ -435,7 +435,7 @@ def __select_check_trailer(source_id, movie_title, is_download):
         (source_id, movie_title, trailer_type, trailer_quality),
     )
     local_path = plugin.get_setting(download_trailer_id)
-    if local_path and os.path.isfile(local_path):
+    if local_path and xbmcvfs.exists(local_path):
         # there is a already downloaded trailer, signal with empty remote_url
         __log('trailer already downloaded, using downloaded version')
         remote_url = None
