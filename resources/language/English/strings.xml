@@ -14,9 +14,10 @@
     <string id="30012">General</string>
     <string id="30013">Playback Mode</string>
     <string id="30014">Stream</string>
-    <string id="30015">Download+Play</string>
+    <string id="30015">Download & Play</string>
     <string id="30016">Playback</string>
     <string id="30017">Download</string>
+    <string id="30018">Download & Play uses stream quality</string>
     <string id="30020">Force ViewMode to Thumbnail</string>
     <string id="30030">Trailer quality (stream)</string>
     <string id="30031">iPod</string>
