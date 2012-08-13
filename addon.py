@@ -193,8 +193,11 @@ def ask_trailer_type(source, movie_title):
     # if the user wants to be asked, show the select dialog
     if plugin.get_setting('ask_trailer') == 'true':
         trailer_types = source.get_trailer_types(movie_title)
+        if not trailer_types:
+            __log('there are no trailers found for selection')
+            return 'trailer'
         # is there more than one trailer_types, ask
-        if len(trailer_types) > 1:
+        elif len(trailer_types) > 1:
             dialog = xbmcgui.Dialog()
             selected = dialog.select(_('choose_trailer_type'),
                                      [t['title'] for t in trailer_types])
