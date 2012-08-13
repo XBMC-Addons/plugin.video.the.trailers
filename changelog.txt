@@ -1,1 +1,5 @@
-unreleased
+[B]0.9.0[/B]
+- Catch error when no trailers types are avaiable
+
+[B]0.9.0[/B]
+- Eden repo release
