@@ -327,7 +327,11 @@ def download_trailer(local_path, remote_url, trailer_id):
 @plugin.route('/add_to_couchpotato/<movie_title>')
 def add_to_couchpotato(movie_title):
     __log('add_to_couchpotato started with movie_title=%s' % movie_title)
-    import resources.lib.couchpotato as couchpotato
+    cp_version = int(plugin.get_setting('cp_version'))
+    if cp_version == 0:
+        import resources.lib.couchpotatov1 as couchpotato
+    else:
+        import resources.lib.couchpotatov2 as couchpotato
     couchpotato.Main()
     return
 
