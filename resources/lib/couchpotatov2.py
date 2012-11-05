@@ -165,7 +165,7 @@ class Main:
         self.search_json = self._get_json_data_from_server(cp_search_url)
 
     def _get_qualities_list( self ):
-        cp_qualities_url = self.cp_url + "/api/%s/quality.list" % self.api_key
+        cp_qualities_url = self.cp_url + "/api/%s/profile.list" % self.api_key
         self.qualities_json = self._get_json_data_from_server( cp_qualities_url )        
     
 
