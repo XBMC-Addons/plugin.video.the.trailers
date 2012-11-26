@@ -105,7 +105,8 @@ class Main:
             movielist.append(movie["original_title"])
 
         for qualityitem in qualities:
-            qualitylist.append( qualityitem["label"] )
+            if qualityitem["hide"] != True:
+                 qualitylist.append( qualityitem["label"] )
 
         if len(movielist) > 1:
             # Check to see if we have an exact match as couchpotato still appears to 
