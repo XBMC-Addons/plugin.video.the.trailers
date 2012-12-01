@@ -369,6 +369,7 @@ def __format_movie(m):
             'is_playable': True,
             'is_folder': False,
             'iconImage': m.get('thumb', 'DefaultVideo.png'),
+            'thumbnail': m.get('thumb', 'DefaultVideo.png'),
             'info': {'title': m.get('title'),
                      'duration': m.get('duration', '0:00'),
                      'size': int(m.get('size', 0)),
