@@ -173,6 +173,7 @@ def get_trailer(source_id, movie_title, mode):
     except NoDownloadPath:
         xbmcgui.Dialog().ok(_('no_download_path'),
                             _('no_download_path'))
+        return
     except (NoQualitySelected, NoTrailerSelected):
         return
 
